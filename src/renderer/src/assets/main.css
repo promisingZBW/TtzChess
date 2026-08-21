@@ -1,0 +1,186 @@
+:root {
+  color-scheme: light dark;
+  font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #1e1e1e;
+  color: #f0f0f0;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 32px;
+}
+
+.counter-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #2d2d2d;
+  color: inherit;
+  cursor: pointer;
+}
+
+.counter-button:hover {
+  background: #3a3a3a;
+}
+
+.versions {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  opacity: 0.75;
+  font-size: 13px;
+}
+
+/* ---------- 阶段2：棋盘页面 ---------- */
+
+.playground {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px 32px;
+}
+
+.playground-hint {
+  margin: 0 0 8px;
+  opacity: 0.75;
+  font-size: 13px;
+}
+
+.playground-layout {
+  display: flex;
+  flex-direction: row;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+.xiangqi-board {
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.board-background {
+  fill: #e8c88a;
+}
+
+.board-outer-border {
+  stroke: #5b3a1a;
+  stroke-width: 3;
+}
+
+.board-grid-lines line {
+  stroke: #5b3a1a;
+  stroke-width: 1.5;
+}
+
+.board-palace-lines line {
+  stroke: #5b3a1a;
+  stroke-width: 1.5;
+}
+
+.board-river-label text {
+  fill: #5b3a1a;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  user-select: none;
+}
+
+.piece {
+  fill: #f6e4bd;
+  stroke-width: 2.5;
+}
+
+.piece-red {
+  stroke: #b3261e;
+}
+
+.piece-black {
+  stroke: #1c1c1c;
+}
+
+.piece-selected {
+  stroke-width: 4;
+  filter: drop-shadow(0 0 4px #ffd54a);
+}
+
+.piece-label {
+  font-size: 24px;
+  font-weight: 700;
+  user-select: none;
+  pointer-events: none;
+}
+
+.piece-label-red {
+  fill: #b3261e;
+}
+
+.piece-label-black {
+  fill: #1c1c1c;
+}
+
+.move-hint-dot {
+  fill: #4caf50;
+  opacity: 0.7;
+}
+
+.capture-hint-ring {
+  fill: none;
+  stroke: #e53935;
+  stroke-width: 3;
+  opacity: 0.85;
+}
+
+.playground-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 220px;
+}
+
+.playground-status p {
+  margin: 4px 0;
+}
+
+.side-red {
+  color: #ff6b60;
+}
+
+.side-black {
+  color: #cfcfcf;
+}
+
+.playground-error {
+  color: #ffb74d;
+}
+
+.playground-result {
+  font-weight: 700;
+  color: #ffd54a;
+}
+
+.playground-movelog h2 {
+  font-size: 14px;
+  margin: 0 0 8px;
+  opacity: 0.8;
+}
+
+.playground-movelog ol {
+  margin: 0;
+  padding-left: 20px;
+  max-height: 420px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.playground-movelog-empty {
+  opacity: 0.6;
+  font-size: 13px;
+}

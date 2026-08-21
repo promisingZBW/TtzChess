@@ -1,0 +1,17 @@
+node_modules
+out
+dist
+dist-electron
+release
+.env
+.env.*
+*.log
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# 开发日志，只在本地记录进度，不进版本库
+journal.md
+
+# 调试用的临时截图
+.debug-screenshot-*.png
