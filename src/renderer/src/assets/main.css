@@ -471,6 +471,58 @@ body {
   font-size: 12px;
 }
 
+/* ---------- 阶段5：自绘删除确认对话框（替代window.confirm，避免Electron下输入卡顿的问题） ---------- */
+
+.confirm-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.confirm-dialog {
+  position: fixed;
+  z-index: 21;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, 80vw);
+  padding: 18px;
+  border-radius: 10px;
+  border: 1px solid #555;
+  background: #2d2d2d;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.confirm-dialog-message {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.confirm-dialog-actions button {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #262626;
+  color: inherit;
+  cursor: pointer;
+}
+
+.confirm-dialog-danger {
+  border-color: #c23c58 !important;
+  background: #4a1c26 !important;
+  color: #ffb0bf;
+}
+
 /* ---------- 阶段4：打谱详情界面 ---------- */
 
 .study-status-page {

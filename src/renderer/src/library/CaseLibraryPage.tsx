@@ -57,6 +57,14 @@ export function CaseLibraryPage({ onOpenCase, onBack }: CaseLibraryPageProps): R
   const [editingCaseId, setEditingCaseId] = useState<string | null>(null)
   const [editingCaseTitle, setEditingCaseTitle] = useState('')
 
+  // 删除文件夹/案例的二次确认改用自绘的对话框，不用 window.confirm。
+  // window.confirm 是浏览器原生的同步阻塞对话框，在 Electron 里有个已知的老毛病：
+  // 对话框关闭之后，渲染进程的输入事件（键盘输入、部分点击）会卡住一小段时间才能恢复，
+  // 表现出来就是"删完文件夹之后界面卡住，过一会儿才能正常输入/点击"——正好是这次要修的bug。
+  const [pendingDelete, setPendingDelete] = useState<{ message: string; onConfirm: () => Promise<void> } | null>(
+    null
+  )
+
   useEffect(() => {
     let cancelled = false
     async function load(): Promise<void> {
@@ -135,11 +143,14 @@ export function CaseLibraryPage({ onOpenCase, onBack }: CaseLibraryPageProps): R
     await refreshFolderView()
   }
 
-  async function handleDeleteFolder(folder: Folder): Promise<void> {
-    const confirmed = window.confirm(`删除文件夹「${folder.name}」？里面的子文件夹会变成顶层文件夹，里面的案例会变成未分类，不会被删除。`)
-    if (!confirmed) return
-    await window.chessoc.moveTree.deleteFolder(folder.id)
-    await refreshFolderView()
+  function handleDeleteFolder(folder: Folder): void {
+    setPendingDelete({
+      message: `删除文件夹「${folder.name}」？里面的子文件夹会变成顶层文件夹，里面的案例会变成未分类，不会被删除。`,
+      onConfirm: async () => {
+        await window.chessoc.moveTree.deleteFolder(folder.id)
+        await refreshFolderView()
+      }
+    })
   }
 
   async function handleCreateCase(): Promise<void> {
@@ -169,11 +180,21 @@ export function CaseLibraryPage({ onOpenCase, onBack }: CaseLibraryPageProps): R
     await refreshFolderView()
   }
 
-  async function handleDeleteCase(studyCase: StudyCase): Promise<void> {
-    const confirmed = window.confirm(`删除案例「${studyCase.title}」？棋谱树和笔记会一起被删除，此操作不可撤销。`)
-    if (!confirmed) return
-    await window.chessoc.moveTree.deleteStudyCase(studyCase.id)
-    await refreshFolderView()
+  function handleDeleteCase(studyCase: StudyCase): void {
+    setPendingDelete({
+      message: `删除案例「${studyCase.title}」？棋谱树和笔记会一起被删除，此操作不可撤销。`,
+      onConfirm: async () => {
+        await window.chessoc.moveTree.deleteStudyCase(studyCase.id)
+        await refreshFolderView()
+      }
+    })
+  }
+
+  async function confirmPendingDelete(): Promise<void> {
+    if (!pendingDelete) return
+    const { onConfirm } = pendingDelete
+    setPendingDelete(null)
+    await onConfirm()
   }
 
   async function handleMoveCase(studyCase: StudyCase, folderIdValue: string): Promise<void> {
@@ -348,6 +369,21 @@ export function CaseLibraryPage({ onOpenCase, onBack }: CaseLibraryPageProps): R
           </div>
         )}
       </section>
+
+      {pendingDelete && (
+        <>
+          <div className="confirm-dialog-overlay" onClick={() => setPendingDelete(null)} />
+          <div className="confirm-dialog">
+            <p className="confirm-dialog-message">{pendingDelete.message}</p>
+            <div className="confirm-dialog-actions">
+              <button onClick={() => setPendingDelete(null)}>取消</button>
+              <button className="confirm-dialog-danger" onClick={confirmPendingDelete}>
+                确认删除
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
