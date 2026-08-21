@@ -85,6 +85,13 @@ describe('MoveNodeRepository 基础增删改查', () => {
     expect(db.moveNodes.getById(root.id)?.childrenIds).toEqual([child2.id])
   })
 
+  it('updateBoardState 能更新节点的局面FEN（摆局阶段结束时用来修正根节点局面）', () => {
+    const root = db.moveNodes.create({ parentId: null, move: '', moveCoord: '', boardStateFEN: 'empty-fen' })
+    const updated = db.moveNodes.updateBoardState(root.id, 'arranged-fen')
+    expect(updated?.boardStateFEN).toBe('arranged-fen')
+    expect(db.moveNodes.getById(root.id)?.boardStateFEN).toBe('arranged-fen')
+  })
+
   it('getPathFromRoot 在多层分支树上能返回正确顺序的完整路径', () => {
     const root = createRoot()
     const a = db.moveNodes.create({ parentId: root.id, move: 'A', moveCoord: 'a', boardStateFEN: 'fa' })

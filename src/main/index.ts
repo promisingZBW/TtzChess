@@ -1,11 +1,9 @@
 import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'node:path'
 import { openAppDatabase } from './db/appDatabase'
+import { registerMoveTreeIpc } from './ipc/moveTreeIpc'
 import type { ChessDatabase } from './db'
 
-// 阶段3只要求数据库层能跑通增删改查+持久化，IPC桥接（渲染进程读写棋谱树）留到阶段4接入
-// 打谱详情界面时再做，这里先在应用生命周期里正确打开/关闭数据库连接，验证它在真实Electron
-// 环境（而不只是vitest的Node环境）下也能正常工作。
 let chessDatabase: ChessDatabase | null = null
 
 function createMainWindow(): void {
@@ -44,6 +42,7 @@ function createMainWindow(): void {
 
 app.whenReady().then(() => {
   chessDatabase = openAppDatabase()
+  registerMoveTreeIpc(chessDatabase)
 
   createMainWindow()
 

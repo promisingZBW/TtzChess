@@ -55,6 +55,14 @@ describe('StudyCaseRepository', () => {
     expect(unfiled?.folderId).toBeNull()
   })
 
+  it('touchUpdatedAt 会刷新updatedAt时间戳', async () => {
+    const studyCase = db.studyCases.create({ type: 'midgame', title: '案例', initialFEN: 'fen' })
+    await new Promise((resolve) => setTimeout(resolve, 5))
+    db.studyCases.touchUpdatedAt(studyCase.id)
+    const reloaded = db.studyCases.getById(studyCase.id)
+    expect(reloaded!.updatedAt).toBeGreaterThan(studyCase.updatedAt)
+  })
+
   it('delete 删除案例时，连带把整棵棋谱树也删掉', () => {
     const studyCase = db.studyCases.create({ type: 'endgame', title: '残局案例', initialFEN: 'fen' })
     const child = db.moveNodes.create({

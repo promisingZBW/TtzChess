@@ -1,11 +1,23 @@
 // 棋盘相关的基础工具函数：创建初始棋盘、克隆、边界/九宫判断、应用一步棋等。
 // 这些函数不涉及"这步棋是否合法"的判断，纯粹是棋盘状态的读写工具。
 
-import { parseFen, STANDARD_START_FEN } from './fen'
-import type { Board, Move, Position, Side } from './types'
+import { EMPTY_BOARD_FEN, parseFen, STANDARD_START_FEN } from './fen'
+import type { Board, Move, Piece, Position, Side } from './types'
 
 export function createInitialBoard(): Board {
   return parseFen(STANDARD_START_FEN).board
+}
+
+/** 一个空棋盘，中局/终局案例"摆局阶段"用这个作为起点，让用户自己往上面摆子 */
+export function createEmptyBoard(): Board {
+  return parseFen(EMPTY_BOARD_FEN).board
+}
+
+/** 摆局阶段用：把某个格子设置成指定棋子（或清空，piece传null），不做任何合法性校验 */
+export function setSquare(board: Board, pos: Position, piece: Piece | null): Board {
+  const next = cloneBoard(board)
+  next[pos.row][pos.col] = piece
+  return next
 }
 
 export function cloneBoard(board: Board): Board {

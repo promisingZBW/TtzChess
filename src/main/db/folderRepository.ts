@@ -43,6 +43,12 @@ export class FolderRepository {
     return rows.map((row) => this.toFolder(row))
   }
 
+  /** 不分层级，拿数据库里全部文件夹的扁平列表——案例库"移动到"下拉框要在客户端自己拼父子路径名，需要一次性拿到全部 */
+  listAll(): Folder[] {
+    const rows = this.db.prepare('SELECT * FROM folders').all() as unknown as FolderRow[]
+    return rows.map((row) => this.toFolder(row))
+  }
+
   rename(id: string, name: string): Folder | null {
     this.db.prepare('UPDATE folders SET name = ? WHERE id = ?').run(name, id)
     return this.getById(id)

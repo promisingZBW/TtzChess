@@ -3,13 +3,21 @@
 
 import { getPieceLabel } from '@shared/chess'
 import type { Board, Position } from '@shared/chess'
+import { readPieceDragData, setPieceDragData, type PieceDragPayload } from '../study/dragTypes'
 import { BOARD_HEIGHT, BOARD_MARGIN, BOARD_WIDTH, CELL_SIZE, COLS, ROWS, colToX, rowToY } from './boardLayout'
+
+/** 摆局阶段专用：允许拖拽棋子到棋盘上/从棋盘上拖出/双击删除，不传这个prop就是普通对弈模式 */
+export interface BoardPlacementHandlers {
+  onDropPiece: (pos: Position, payload: PieceDragPayload) => void
+  onRemovePiece: (pos: Position) => void
+}
 
 interface BoardViewProps {
   board: Board
   selected: Position | null
   legalTargets: Position[]
-  onSquareClick: (pos: Position) => void
+  onSquareClick?: (pos: Position) => void
+  placement?: BoardPlacementHandlers
 }
 
 function isSamePosition(a: Position, b: Position): boolean {
@@ -68,7 +76,7 @@ function RiverLabel(): React.JSX.Element {
   )
 }
 
-export function BoardView({ board, selected, legalTargets, onSquareClick }: BoardViewProps): React.JSX.Element {
+export function BoardView({ board, selected, legalTargets, onSquareClick, placement }: BoardViewProps): React.JSX.Element {
   const intersections: React.JSX.Element[] = []
 
   for (let row = 0; row < ROWS; row++) {
@@ -81,14 +89,36 @@ export function BoardView({ board, selected, legalTargets, onSquareClick }: Boar
       const isLegalTarget = legalTargets.some((target) => isSamePosition(target, pos))
 
       intersections.push(
-        <g key={`${row}-${col}`} onClick={() => onSquareClick(pos)} style={{ cursor: 'pointer' }}>
+        <g
+          key={`${row}-${col}`}
+          onClick={() => onSquareClick?.(pos)}
+          onDragOver={placement ? (e) => e.preventDefault() : undefined}
+          onDrop={
+            placement
+              ? (e) => {
+                  e.preventDefault()
+                  const payload = readPieceDragData(e)
+                  if (payload) placement.onDropPiece(pos, payload)
+                }
+              : undefined
+          }
+          style={{ cursor: 'pointer' }}
+        >
           {/* 透明的大命中区域，保证点空白格子也能触发点击，不用非要精准点在棋子上 */}
           <circle cx={x} cy={y} r={CELL_SIZE / 2 - 2} fill="transparent" />
 
           {isLegalTarget && !piece && <circle className="move-hint-dot" cx={x} cy={y} r={7} />}
 
           {piece && (
-            <g>
+            <g
+              // React的SVGProps类型定义里没有draggable（HTML5拖拽的draggable属性理论上通用，
+              // 但SVG元素的TS类型没跟上），这里用类型断言强行加上去，浏览器实际是支持的。
+              {...({ draggable: Boolean(placement) } as unknown as React.SVGAttributes<SVGGElement>)}
+              onDragStart={
+                placement ? (e) => setPieceDragData(e, { kind: piece.kind, side: piece.side, fromBoard: pos }) : undefined
+              }
+              onDoubleClick={placement ? () => placement.onRemovePiece(pos) : undefined}
+            >
               {isLegalTarget && <circle className="capture-hint-ring" cx={x} cy={y} r={26} />}
               <circle
                 className={`piece piece-${piece.side}${isSelected ? ' piece-selected' : ''}`}

@@ -10,6 +10,9 @@ import type { Board, PieceKind, Side, Square } from './types'
 export const STANDARD_START_FEN =
   'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1'
 
+/** 完全空白的棋盘（10行，每行9个空格），中局/终局案例"摆局阶段"的起始局面用这个 */
+export const EMPTY_BOARD_FEN = '9/9/9/9/9/9/9/9/9/9 w - - 0 1'
+
 const LETTER_TO_KIND: Record<string, PieceKind> = {
   r: 'R',
   n: 'N',

@@ -112,6 +112,10 @@ export class StudyCaseRepository {
     return this.getById(id)
   }
 
+  touchUpdatedAt(id: string): void {
+    this.db.prepare('UPDATE study_cases SET updated_at = ? WHERE id = ?').run(Date.now(), id)
+  }
+
   delete(id: string): void {
     const studyCase = this.getById(id)
     if (!studyCase) return

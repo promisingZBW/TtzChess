@@ -97,6 +97,15 @@ export class MoveNodeRepository {
   }
 
   /**
+   * 更新一个节点的局面FEN。目前唯一的用途：中局/终局案例"摆局阶段"结束、点击"开始打谱"时，
+   * 把用户手动摆好的局面写回根节点（根节点创建时是空白棋盘，摆完子之后要修正成真实起始局面）。
+   */
+  updateBoardState(id: string, boardStateFEN: string): MoveNode | null {
+    this.db.prepare('UPDATE move_nodes SET board_state_fen = ? WHERE id = ?').run(boardStateFEN, id)
+    return this.getById(id)
+  }
+
+  /**
    * 阶段3要求的基础查询：给定一个节点id，取出从根到该节点的完整路径（数组顺序：根节点在前，目标节点在后）。
    * 前进/后退、光球跳转到某个历史局面时，都需要这条路径来知道"棋盘要重放哪些步骤"。
    */

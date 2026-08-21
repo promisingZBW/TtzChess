@@ -184,3 +184,634 @@ body {
   opacity: 0.6;
   font-size: 13px;
 }
+
+/* ---------- 阶段4：首页 ---------- */
+
+.home-page {
+  padding: 32px 40px;
+  max-width: 720px;
+}
+
+.home-section {
+  margin-top: 28px;
+}
+
+.home-create-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.home-create-form input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #2d2d2d;
+  color: inherit;
+}
+
+.home-create-form select,
+.home-create-form button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #2d2d2d;
+  color: inherit;
+  cursor: pointer;
+}
+
+.home-create-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.home-empty-hint {
+  opacity: 0.65;
+  font-size: 13px;
+}
+
+.home-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.home-list-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #262626;
+  color: inherit;
+  cursor: pointer;
+}
+
+.home-list-item:hover {
+  background: #333;
+}
+
+.home-library-link {
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #262626;
+  color: inherit;
+  cursor: pointer;
+}
+
+.home-library-link:hover {
+  background: #333;
+}
+
+/* ---------- 阶段5：中局/终局案例库 ---------- */
+
+.library-page {
+  padding: 32px 40px;
+  max-width: 960px;
+}
+
+.library-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.library-toolbar button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #2d2d2d;
+  color: inherit;
+  cursor: pointer;
+}
+
+.library-title {
+  margin: 0;
+  font-size: 20px;
+  flex: 1;
+}
+
+.library-search-input {
+  width: 260px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #2d2d2d;
+  color: inherit;
+}
+
+.library-breadcrumb {
+  margin: 12px 0 4px;
+  font-size: 13px;
+}
+
+.library-breadcrumb-item {
+  border: none;
+  background: transparent;
+  color: #6fb3f2;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 13px;
+}
+
+.library-breadcrumb-item:disabled {
+  color: inherit;
+  opacity: 0.85;
+  cursor: default;
+}
+
+.library-breadcrumb-sep {
+  opacity: 0.5;
+}
+
+.library-section {
+  margin-top: 22px;
+}
+
+.library-folder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.library-folder-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #262626;
+}
+
+.library-folder-card input {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #1e1e1e;
+  color: inherit;
+}
+
+.library-folder-open {
+  flex: 1;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 14px;
+}
+
+.library-folder-card button {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #2d2d2d;
+  color: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.library-case-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.library-case-card {
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #262626;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.library-case-card:hover {
+  background: #2d2d2d;
+  border-color: #666;
+}
+
+.library-case-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.library-case-type-badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.library-case-type-midgame {
+  background: #1f3a52;
+  color: #7fc8ff;
+}
+
+.library-case-type-endgame {
+  background: #4a2f12;
+  color: #ffd9a0;
+}
+
+.library-case-title {
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-case-title-input {
+  flex: 1;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #1e1e1e;
+  color: inherit;
+}
+
+.library-case-meta {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.65;
+}
+
+.library-case-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.library-case-actions button,
+.library-case-actions select {
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #2d2d2d;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* ---------- 阶段4：打谱详情界面 ---------- */
+
+.study-status-page {
+  padding: 60px;
+  font-size: 15px;
+  opacity: 0.8;
+}
+
+.study-status-error {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.study-detail-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.study-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #3a3a3a;
+  flex-shrink: 0;
+}
+
+.study-toolbar button {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #2d2d2d;
+  color: inherit;
+  cursor: pointer;
+}
+
+.study-title {
+  margin: 0;
+  font-size: 16px;
+  flex: 1;
+}
+
+.study-toolbar-right {
+  display: flex;
+  gap: 10px;
+}
+
+.sandbox-toggle-active {
+  background: #5a3d1a !important;
+  border-color: #d99b3a !important;
+  color: #ffd9a0;
+}
+
+.study-body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  padding: 20px;
+  overflow: auto;
+}
+
+.study-board-column {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.study-board-center {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.study-hint {
+  margin: 0;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #2d2d2d;
+  border: 1px solid #4a4a4a;
+}
+
+.study-hint-sandbox {
+  background: #4a2f12;
+  border-color: #d99b3a;
+  color: #ffd9a0;
+}
+
+.start-recording-button {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: 1px solid #4caf50;
+  background: #21331f;
+  color: #b8f0b0;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.study-nav-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.study-nav-buttons button {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #2d2d2d;
+  color: inherit;
+  cursor: pointer;
+}
+
+.study-nav-buttons button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---------- 阶段4：摆局阶段的棋子摆放区 ---------- */
+
+.placement-tray {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #232323;
+  width: 190px;
+  flex-shrink: 0;
+}
+
+.placement-tray-hint {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.75;
+  line-height: 1.5;
+}
+
+.placement-tray-side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.placement-tray-side-label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.placement-tray-pieces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tray-piece {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: grab;
+  background: #f6e4bd;
+  border: 2px solid;
+  user-select: none;
+}
+
+.tray-piece.piece-red {
+  border-color: #b3261e;
+  color: #b3261e;
+}
+
+.tray-piece.piece-black {
+  border-color: #1c1c1c;
+  color: #1c1c1c;
+}
+
+/* ---------- 阶段4：右侧光球棋谱树面板 ---------- */
+
+.move-tree-panel {
+  position: relative;
+  flex: 1;
+  min-width: 320px;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  background: #1a1a1a;
+  overflow: auto;
+  padding: 10px;
+}
+
+.move-tree-panel-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  font-size: 13px;
+}
+
+.tree-link {
+  fill: none;
+  stroke: #555;
+  stroke-width: 2;
+}
+
+.tree-node-group {
+  cursor: pointer;
+}
+
+.tree-node {
+  stroke-width: 2;
+}
+
+.tree-node-plain {
+  fill: #6fb3f2;
+  stroke: #2c6cad;
+}
+
+.tree-node-noted {
+  fill: #f28b9d;
+  stroke: #c23c58;
+}
+
+.tree-node-current {
+  stroke: #ffd54a;
+  stroke-width: 3.5;
+}
+
+.tree-node-path-ring {
+  fill: none;
+  stroke: #ffd54a;
+  stroke-width: 1.5;
+  opacity: 0.6;
+}
+
+.tree-node-label {
+  font-size: 11px;
+  fill: #ddd;
+  user-select: none;
+}
+
+.context-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  background: #2d2d2d;
+  border: 1px solid #555;
+  border-radius: 6px;
+  overflow: hidden;
+  min-width: 120px;
+}
+
+.context-menu button {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.context-menu button:hover {
+  background: #3a3a3a;
+}
+
+.note-box {
+  position: sticky;
+  bottom: 0;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #c23c58;
+  background: #2a1c20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.note-box-close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.note-box-content {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+
+.note-box-textarea {
+  width: 100%;
+  min-height: 70px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #1e1e1e;
+  color: inherit;
+  padding: 6px 8px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.note-box-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.note-box-actions button,
+.note-box button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #2d2d2d;
+  color: inherit;
+  cursor: pointer;
+}

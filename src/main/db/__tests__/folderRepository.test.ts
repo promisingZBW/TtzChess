@@ -38,6 +38,16 @@ describe('FolderRepository', () => {
     expect(reloadedChild?.parentFolderId).toBeNull()
   })
 
+  it('listAll 不分层级，返回数据库里的全部文件夹（阶段5"移动到"下拉框拼路径名用）', () => {
+    const root = db.folders.create('残局案例库')
+    const child = db.folders.create('单车残局', root.id)
+    const another = db.folders.create('中局战术')
+
+    const all = db.folders.listAll().map((f) => f.id)
+    expect(all).toEqual(expect.arrayContaining([root.id, child.id, another.id]))
+    expect(all).toHaveLength(3)
+  })
+
   it('删除文件夹后，里面的案例变成未分类（folderId变null），不会被连带删除', () => {
     const folder = db.folders.create('待删除的文件夹')
     const studyCase = db.studyCases.create({
