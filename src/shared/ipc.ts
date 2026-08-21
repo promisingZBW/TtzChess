@@ -14,6 +14,7 @@ import type {
   StudyCase,
   StudyCaseType
 } from './moveTree'
+import type { EngineAnalysisResult, EngineStatus } from './engine'
 
 export interface ChessOCVersions {
   electron: string
@@ -74,6 +75,12 @@ export const MOVE_TREE_CHANNELS = {
   deleteStudyCase: 'moveTree:deleteStudyCase'
 } as const
 
+/** 阶段6：Pikafish引擎分析相关的IPC channel */
+export const ENGINE_CHANNELS = {
+  analyzePosition: 'engine:analyzePosition',
+  getStatus: 'engine:getStatus'
+} as const
+
 export interface MoveTreeBridge {
   createOpeningStudy(input: CreateOpeningStudyRequest): Promise<OpeningStudy>
   listOpeningStudies(): Promise<OpeningStudy[]>
@@ -107,8 +114,15 @@ export interface MoveTreeBridge {
   deleteStudyCase(id: string): Promise<void>
 }
 
+export interface EngineBridge {
+  /** depth不传时使用主进程侧的默认搜索深度（阶段6目前固定15，见EngineService.DEFAULT_ANALYSIS_DEPTH） */
+  analyzePosition(fen: string, depth?: number): Promise<EngineAnalysisResult>
+  getStatus(): Promise<EngineStatus>
+}
+
 export interface ChessOCBridge {
   appName: string
   versions: ChessOCVersions
   moveTree: MoveTreeBridge
+  engine: EngineBridge
 }

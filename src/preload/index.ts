@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { MOVE_TREE_CHANNELS } from '../shared/ipc'
+import { ENGINE_CHANNELS, MOVE_TREE_CHANNELS } from '../shared/ipc'
 import type {
   ChessOCBridge,
   CreateFolderRequest,
@@ -51,6 +51,10 @@ const api: ChessOCBridge = {
     moveStudyCaseToFolder: (id: string, folderId: string | null) =>
       ipcRenderer.invoke(MOVE_TREE_CHANNELS.moveStudyCaseToFolder, id, folderId),
     deleteStudyCase: (id: string) => ipcRenderer.invoke(MOVE_TREE_CHANNELS.deleteStudyCase, id)
+  },
+  engine: {
+    analyzePosition: (fen: string, depth?: number) => ipcRenderer.invoke(ENGINE_CHANNELS.analyzePosition, fen, depth),
+    getStatus: () => ipcRenderer.invoke(ENGINE_CHANNELS.getStatus)
   }
 }
 

@@ -15,3 +15,8 @@ journal.md
 
 # 调试用的临时截图
 .debug-screenshot-*.png
+
+# 阶段6：Pikafish引擎二进制+53MB的nnue神经网络权重文件，体积太大不适合进git仓库，
+# 运行 `npm run setup:pikafish` 会自动下载解压到这里，见 resources/engines/README.md
+/resources/engines/pikafish/
+/resources/engines/.tmp-setup/

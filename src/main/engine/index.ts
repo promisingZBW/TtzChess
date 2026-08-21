@@ -1,0 +1,6 @@
+export { EngineService, DEFAULT_ANALYSIS_DEPTH } from './EngineService'
+export type { EngineServiceOptions } from './EngineService'
+export { resolveEngineInstallation, resolveEngineRootDir, listEngineCandidates, filterExistingCandidates } from './pikafishLocator'
+export type { EngineCandidate, EngineInstallation } from './pikafishLocator'
+export { parseUciInfoLine, parseBestMoveLine } from './uciProtocol'
+export type { UciInfoUpdate, UciBestMove } from './uciProtocol'

@@ -19,6 +19,7 @@ import type {
 } from '@shared/ipc'
 import { EMPTY_BOARD_FEN, STANDARD_START_FEN } from '@shared/chess'
 import type { Folder, MoveNode, OpeningStudy, StudyCase } from '@shared/moveTree'
+import type { EngineStatus } from '@shared/engine'
 
 const STORAGE_KEY = 'chessoc-browser-fallback-db-v1'
 
@@ -269,6 +270,16 @@ export function createBrowserFallbackBridge(): ChessOCBridge {
         delete db.studyCases[id]
         deleteMoveNodeSubtree(db, row.rootNodeId)
         saveDb(db)
+      }
+    },
+    engine: {
+      // Pikafish是一个真正的子进程，浏览器里没有Node能力，没法伪造，
+      // 浏览器演示模式下"AI分析"功能统一提示用户改用真正的Electron应用
+      async analyzePosition(): Promise<never> {
+        throw new Error('引擎分析功能只在Electron应用里可用，浏览器演示模式无法调用Pikafish子进程')
+      },
+      async getStatus(): Promise<EngineStatus> {
+        return { state: 'unavailable', reason: '浏览器演示模式不支持引擎分析' }
       }
     }
   }
