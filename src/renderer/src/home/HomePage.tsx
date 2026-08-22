@@ -3,14 +3,16 @@
 // 阶段2的demo(PlayGroundPage.tsx)代码还留着，只是不再是默认页面了。
 //
 // 开局棋路那一块，阶段5-8期间一直是"下拉框选棋子类型+输入谱名+列表"的朴素表单实现；
-// 阶段9换成真正的Sunburst径向图（见OpeningSunburst.tsx），交互行为不变（点中心=新建，
-// 点已有分支=直接进入），只是可视化方式升级了。
+// 阶段9换成径向图（见OpeningSunburst.tsx）：中心=起手棋子类型，用户自己创建的每一条
+// 独立棋路是从中心延伸出去的一根线+一个小球。交互行为不变（点中心=新建，点小球=直接
+// 进入对应棋路），只是可视化方式升级了。径向图本身不需要棋谱树数据，只需要每条棋路的
+// id和谱名，所以这里不再调用 loadTree。
 
 import { useEffect, useState } from 'react'
 import type { OpeningPieceType, OpeningRoot } from '@shared/moveTree'
 import type { StudySubjectRef } from '../study/useStudySession'
 import { buildSunburstCenters, ensureAllPieceTypeRoots, OPENING_CENTER_LABELS } from './openingSunburstUtils'
-import type { SunburstCenterData, SunburstStudyData } from './openingSunburstUtils'
+import type { SunburstCenterData } from './openingSunburstUtils'
 import { OpeningSunburst } from './OpeningSunburst'
 
 interface HomePageProps {
@@ -23,17 +25,15 @@ async function loadSunburstCenters(): Promise<SunburstCenterData[]> {
   const roots: OpeningRoot[] = await window.chessoc.moveTree.listOpeningRoots()
   const allStudyIds = roots.flatMap((r) => r.studyIds)
 
-  const studyEntries = await Promise.all(
-    allStudyIds.map(async (id): Promise<[string, SunburstStudyData] | null> => {
+  const titleEntries = await Promise.all(
+    allStudyIds.map(async (id): Promise<[string, string] | null> => {
       const study = await window.chessoc.moveTree.getOpeningStudy(id)
-      if (!study) return null
-      const nodes = await window.chessoc.moveTree.loadTree(study.rootNode.id)
-      return [id, { studyId: id, title: study.title, rootNodeId: study.rootNode.id, nodes: new Map(nodes.map((n) => [n.id, n])) }]
+      return study ? [id, study.title] : null
     })
   )
 
-  const studies = new Map(studyEntries.filter((e): e is [string, SunburstStudyData] => e !== null))
-  return buildSunburstCenters(ensureAllPieceTypeRoots(roots), studies)
+  const studyTitles = new Map(titleEntries.filter((e): e is [string, string] => e !== null))
+  return buildSunburstCenters(ensureAllPieceTypeRoots(roots), studyTitles)
 }
 
 export function HomePage({ onOpenSubject, onOpenLibrary, onOpenAnalysis }: HomePageProps): React.JSX.Element {
@@ -77,7 +77,7 @@ export function HomePage({ onOpenSubject, onOpenLibrary, onOpenAnalysis }: HomeP
       <section className="home-section">
         <h2>开局径向图</h2>
         <p className="home-empty-hint">
-          点中心的棋子图标新建一条棋路；点已经展开出来的扇区，直接进入对应棋路继续打谱。
+          点中心的棋子图标新建一条棋路；点已创建棋路对应的小球，直接进入继续打谱。
         </p>
         {loading ? (
           <p>加载中…</p>

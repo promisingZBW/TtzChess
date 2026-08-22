@@ -893,36 +893,41 @@ body {
   gap: 6px;
 }
 
-.sunburst-arc {
+.sunburst-spoke-group {
   cursor: pointer;
-  stroke: #1e1e1e;
-  stroke-width: 1;
-  fill: #6fb3f2;
+}
+
+.sunburst-spoke {
+  stroke: #6fb3f2;
+  stroke-width: 2;
   opacity: 0.55;
 }
 
-.sunburst-arc:hover {
-  opacity: 0.85;
+.sunburst-spoke-group:hover .sunburst-spoke {
+  stroke: #9fd3ff;
+  opacity: 1;
 }
 
-.sunburst-arc-depth-1 {
-  fill: #6fb3f2;
-  opacity: 0.85;
+.sunburst-ball {
+  fill: #2d2d2d;
+  stroke: #6fb3f2;
+  stroke-width: 2;
 }
 
-.sunburst-arc-depth-2 {
-  fill: #7fd0c8;
-  opacity: 0.7;
+.sunburst-spoke-group:hover .sunburst-ball {
+  fill: #3a3a3a;
+  stroke: #9fd3ff;
 }
 
-.sunburst-arc-depth-3 {
-  fill: #b7e07f;
-  opacity: 0.6;
+.sunburst-ball-label {
+  fill: #d8d8d8;
+  font-size: 12px;
+  pointer-events: none;
+  user-select: none;
 }
 
-.sunburst-arc-depth-4 {
-  fill: #e0c97f;
-  opacity: 0.5;
+.sunburst-spoke-group:hover .sunburst-ball-label {
+  fill: #ffffff;
 }
 
 .sunburst-hub {

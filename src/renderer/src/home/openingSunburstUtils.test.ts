@@ -1,130 +1,57 @@
 import { describe, expect, it } from 'vitest'
-import type { MoveNode, OpeningRoot } from '@shared/moveTree'
-import { buildSunburstCenters, ensureAllPieceTypeRoots, type SunburstStudyData } from './openingSunburstUtils'
-
-function node(id: string, parentId: string | null, childrenIds: string[], move = ''): MoveNode {
-  return { id, parentId, childrenIds, move, moveCoord: '', boardStateFEN: '', note: null, hasNote: false, createdAt: 0 }
-}
+import type { OpeningRoot } from '@shared/moveTree'
+import { buildSunburstCenters, ensureAllPieceTypeRoots } from './openingSunburstUtils'
 
 describe('buildSunburstCenters', () => {
-  it('还没有走任何棋的空白棋路：顶层扇区存在，但没有子扇区', () => {
-    const nodes = new Map([['root', node('root', null, [])]])
-    const study: SunburstStudyData = { studyId: 's1', title: '中炮直车', rootNodeId: 'root', nodes }
+  it('一个中心点下只有一条棋路：studies里只有这一条，字段原样带出', () => {
     const roots: OpeningRoot[] = [{ pieceType: 'C', centerLabel: '当头炮局', studyIds: ['s1'] }]
+    const titles = new Map([['s1', '中炮直车']])
 
-    const centers = buildSunburstCenters(roots, new Map([['s1', study]]))
+    const centers = buildSunburstCenters(roots, titles)
 
     expect(centers).toHaveLength(1)
     expect(centers[0].pieceType).toBe('C')
-    expect(centers[0].segments).toEqual([{ id: 's1', studyId: 's1', label: '中炮直车', children: [] }])
+    expect(centers[0].centerLabel).toBe('当头炮局')
+    expect(centers[0].studies).toEqual([{ studyId: 's1', title: '中炮直车' }])
   })
 
-  it('走了两步的直线棋路：嵌套深度和棋谱树一致', () => {
-    const nodes = new Map([
-      ['root', node('root', null, ['m1'])],
-      ['m1', node('m1', 'root', ['m2'], '炮二平五')],
-      ['m2', node('m2', 'm1', [], '马8进7')]
-    ])
-    const study: SunburstStudyData = { studyId: 's1', title: '中炮局', rootNodeId: 'root', nodes }
-    const roots: OpeningRoot[] = [{ pieceType: 'C', centerLabel: '当头炮局', studyIds: ['s1'] }]
-
-    const [center] = buildSunburstCenters(roots, new Map([['s1', study]]))
-
-    expect(center.segments).toHaveLength(1)
-    const studySegment = center.segments[0]
-    expect(studySegment.children).toHaveLength(1)
-    expect(studySegment.children[0]).toMatchObject({ id: 'm1', studyId: 's1', label: '炮二平五' })
-    expect(studySegment.children[0].children).toHaveLength(1)
-    expect(studySegment.children[0].children[0]).toMatchObject({ id: 'm2', studyId: 's1', label: '马8进7' })
-  })
-
-  it('第一步就有分支：顶层挂两个子扇区', () => {
-    const nodes = new Map([
-      ['root', node('root', null, ['a', 'b'])],
-      ['a', node('a', 'root', [], '炮二平五')],
-      ['b', node('b', 'root', [], '马二进三')]
-    ])
-    const study: SunburstStudyData = { studyId: 's1', title: '起马变化', rootNodeId: 'root', nodes }
-    const roots: OpeningRoot[] = [{ pieceType: 'N', centerLabel: '起马局', studyIds: ['s1'] }]
-
-    const [center] = buildSunburstCenters(roots, new Map([['s1', study]]))
-    expect(center.segments[0].children.map((c) => c.label)).toEqual(['炮二平五', '马二进三'])
-  })
-
-  it('同一个中心点下有多条独立棋路，各自互不影响', () => {
-    const studyA: SunburstStudyData = {
-      studyId: 'a',
-      title: '棋路A',
-      rootNodeId: 'rootA',
-      nodes: new Map([['rootA', node('rootA', null, [])]])
-    }
-    const studyB: SunburstStudyData = {
-      studyId: 'b',
-      title: '棋路B',
-      rootNodeId: 'rootB',
-      nodes: new Map([['rootB', node('rootB', null, [])]])
-    }
+  it('同一个中心点下有多条独立棋路，按创建顺序排列，各自互不影响', () => {
     const roots: OpeningRoot[] = [{ pieceType: 'C', centerLabel: '当头炮局', studyIds: ['a', 'b'] }]
+    const titles = new Map([
+      ['a', '棋路A'],
+      ['b', '棋路B']
+    ])
 
-    const [center] = buildSunburstCenters(
-      roots,
-      new Map([
-        ['a', studyA],
-        ['b', studyB]
-      ])
-    )
-    expect(center.segments.map((s) => s.label)).toEqual(['棋路A', '棋路B'])
+    const [center] = buildSunburstCenters(roots, titles)
+    expect(center.studies.map((s) => s.title)).toEqual(['棋路A', '棋路B'])
   })
 
   it('多个中心点分别渲染，互不干扰', () => {
-    const studyC: SunburstStudyData = {
-      studyId: 'c',
-      title: '炮局',
-      rootNodeId: 'r',
-      nodes: new Map([['r', node('r', null, [])]])
-    }
-    const studyN: SunburstStudyData = {
-      studyId: 'n',
-      title: '马局',
-      rootNodeId: 'r2',
-      nodes: new Map([['r2', node('r2', null, [])]])
-    }
     const roots: OpeningRoot[] = [
       { pieceType: 'C', centerLabel: '当头炮局', studyIds: ['c'] },
       { pieceType: 'N', centerLabel: '起马局', studyIds: ['n'] }
     ]
+    const titles = new Map([
+      ['c', '炮局'],
+      ['n', '马局']
+    ])
 
-    const centers = buildSunburstCenters(
-      roots,
-      new Map([
-        ['c', studyC],
-        ['n', studyN]
-      ])
-    )
+    const centers = buildSunburstCenters(roots, titles)
     expect(centers.map((c) => c.pieceType)).toEqual(['C', 'N'])
+    expect(centers.map((c) => c.studies[0].title)).toEqual(['炮局', '马局'])
   })
 
-  it('studies里查不到的studyId会被跳过，不影响其它棋路正常渲染', () => {
-    const studyA: SunburstStudyData = {
-      studyId: 'a',
-      title: '棋路A',
-      rootNodeId: 'rootA',
-      nodes: new Map([['rootA', node('rootA', null, [])]])
-    }
+  it('还没创建任何棋路的中心点：studies是空数组，不是报错', () => {
+    const roots: OpeningRoot[] = [{ pieceType: 'C', centerLabel: '当头炮局', studyIds: [] }]
+    const [center] = buildSunburstCenters(roots, new Map())
+    expect(center.studies).toEqual([])
+  })
+
+  it('titles里查不到的studyId会被跳过，不影响其它棋路正常渲染', () => {
     const roots: OpeningRoot[] = [{ pieceType: 'C', centerLabel: '当头炮局', studyIds: ['a', 'missing'] }]
-
-    const [center] = buildSunburstCenters(roots, new Map([['a', studyA]]))
-    expect(center.segments).toHaveLength(1)
-    expect(center.segments[0].label).toBe('棋路A')
-  })
-
-  it('棋谱树缓存里缺了某个节点（数据异常）时，跳过它而不是抛错', () => {
-    const nodes = new Map([['root', node('root', null, ['missing-child'])]])
-    const study: SunburstStudyData = { studyId: 's1', title: '棋路', rootNodeId: 'root', nodes }
-    const roots: OpeningRoot[] = [{ pieceType: 'C', centerLabel: '当头炮局', studyIds: ['s1'] }]
-
-    const [center] = buildSunburstCenters(roots, new Map([['s1', study]]))
-    expect(center.segments[0].children).toEqual([])
+    const [center] = buildSunburstCenters(roots, new Map([['a', '棋路A']]))
+    expect(center.studies).toHaveLength(1)
+    expect(center.studies[0].title).toBe('棋路A')
   })
 })
 
