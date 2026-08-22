@@ -189,7 +189,7 @@ body {
 
 .home-page {
   padding: 32px 40px;
-  max-width: 720px;
+  max-width: 1100px;
 }
 
 .home-section {
@@ -500,6 +500,16 @@ body {
   margin: 0;
   font-size: 14px;
   line-height: 1.6;
+}
+
+.confirm-dialog input[type='text'] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #1e1e1e;
+  color: inherit;
 }
 
 .confirm-dialog-actions {
@@ -866,4 +876,293 @@ body {
   background: #2d2d2d;
   color: inherit;
   cursor: pointer;
+}
+
+/* ---------- 阶段9：首页开局径向图（Sunburst） ---------- */
+
+.sunburst-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sunburst-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.sunburst-arc {
+  cursor: pointer;
+  stroke: #1e1e1e;
+  stroke-width: 1;
+  fill: #6fb3f2;
+  opacity: 0.55;
+}
+
+.sunburst-arc:hover {
+  opacity: 0.85;
+}
+
+.sunburst-arc-depth-1 {
+  fill: #6fb3f2;
+  opacity: 0.85;
+}
+
+.sunburst-arc-depth-2 {
+  fill: #7fd0c8;
+  opacity: 0.7;
+}
+
+.sunburst-arc-depth-3 {
+  fill: #b7e07f;
+  opacity: 0.6;
+}
+
+.sunburst-arc-depth-4 {
+  fill: #e0c97f;
+  opacity: 0.5;
+}
+
+.sunburst-hub {
+  fill: #2d2d2d;
+  stroke: #888;
+  stroke-width: 1.5;
+  cursor: pointer;
+}
+
+.sunburst-hub:hover {
+  fill: #3a3a3a;
+  stroke: #bbb;
+}
+
+.sunburst-hub-label {
+  fill: #f0f0f0;
+  font-size: 18px;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sunburst-center-caption {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* ---------- 阶段8：AI分析 ---------- */
+
+.analysis-entry-section {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.analysis-entry-card {
+  flex: 1;
+  min-width: 240px;
+  text-align: left;
+  padding: 18px;
+  border-radius: 10px;
+  border: 1px solid #555;
+  background: #262626;
+  color: inherit;
+  cursor: pointer;
+}
+
+.analysis-entry-card:hover {
+  background: #333;
+}
+
+.analysis-entry-card h3 {
+  margin: 0 0 8px;
+}
+
+.analysis-entry-card p {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.75;
+  line-height: 1.5;
+}
+
+.analysis-panel-column {
+  flex: 1;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.analysis-hint {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.analysis-hint-error {
+  color: #ffb0bf;
+  opacity: 1;
+}
+
+.analysis-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.analysis-controls button {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid #666;
+  background: #2d2d2d;
+  color: inherit;
+  cursor: pointer;
+}
+
+.analysis-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.analysis-side-radio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.analysis-start-button {
+  border-color: #4caf50 !important;
+  background: #21331f !important;
+  color: #b8f0b0 !important;
+  font-weight: 600;
+}
+
+.analysis-setup {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.analysis-engine-banner {
+  margin: 0;
+  padding: 8px 20px;
+  font-size: 13px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.analysis-engine-banner-warn {
+  background: #4a2f12;
+  color: #ffd9a0;
+}
+
+.analysis-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 0;
+}
+
+.analysis-spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid #444;
+  border-top-color: #6fb3f2;
+  animation: analysis-spin 0.8s linear infinite;
+}
+
+@keyframes analysis-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.analysis-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.analysis-root-summary {
+  margin: 0;
+  font-size: 14px;
+}
+
+.analysis-step-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.analysis-step {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #232323;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.analysis-step-headline {
+  font-size: 14px;
+}
+
+.analysis-step-detail {
+  font-size: 12.5px;
+  opacity: 0.85;
+}
+
+.analysis-step-note {
+  font-size: 12px;
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.analysis-tag-discovered {
+  color: #ffd9a0;
+  font-weight: 600;
+}
+
+.analysis-deep-panel {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #3a3a3a;
+}
+
+.win-rate-chart-gridline {
+  stroke: #3a3a3a;
+  stroke-dasharray: 3 3;
+}
+
+.win-rate-chart-tick {
+  font-size: 10px;
+  fill: #999;
+}
+
+.win-rate-chart-line {
+  fill: none;
+  stroke: #6fb3f2;
+  stroke-width: 2;
+}
+
+.win-rate-chart-point {
+  fill: #6fb3f2;
+  cursor: pointer;
+  stroke: #1e1e1e;
+  stroke-width: 1;
+}
+
+.win-rate-chart-point-active {
+  fill: #ffd54a;
+  stroke: #a8790a;
 }

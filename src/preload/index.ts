@@ -19,6 +19,7 @@ const api: ChessOCBridge = {
     createOpeningStudy: (input: CreateOpeningStudyRequest) =>
       ipcRenderer.invoke(MOVE_TREE_CHANNELS.createOpeningStudy, input),
     listOpeningStudies: () => ipcRenderer.invoke(MOVE_TREE_CHANNELS.listOpeningStudies),
+    listOpeningRoots: () => ipcRenderer.invoke(MOVE_TREE_CHANNELS.listOpeningRoots),
     getOpeningStudy: (id: string) => ipcRenderer.invoke(MOVE_TREE_CHANNELS.getOpeningStudy, id),
     touchOpeningStudy: (id: string) => ipcRenderer.invoke(MOVE_TREE_CHANNELS.touchOpeningStudy, id),
 

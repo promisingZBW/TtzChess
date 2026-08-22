@@ -21,6 +21,7 @@ export function registerMoveTreeIpc(db: ChessDatabase): void {
     })
   )
   ipcMain.handle(MOVE_TREE_CHANNELS.listOpeningStudies, () => db.openingStudies.listAll())
+  ipcMain.handle(MOVE_TREE_CHANNELS.listOpeningRoots, () => db.openingStudies.listOpeningRoots())
   ipcMain.handle(MOVE_TREE_CHANNELS.getOpeningStudy, (_event, id: string) => db.openingStudies.getById(id))
   ipcMain.handle(MOVE_TREE_CHANNELS.touchOpeningStudy, (_event, id: string) => {
     db.openingStudies.touchUpdatedAt(id)

@@ -10,6 +10,7 @@ import type {
   Folder,
   MoveNode,
   OpeningPieceType,
+  OpeningRoot,
   OpeningStudy,
   StudyCase,
   StudyCaseType
@@ -50,6 +51,7 @@ export interface CreateMoveNodeRequest {
 export const MOVE_TREE_CHANNELS = {
   createOpeningStudy: 'moveTree:createOpeningStudy',
   listOpeningStudies: 'moveTree:listOpeningStudies',
+  listOpeningRoots: 'moveTree:listOpeningRoots',
   getOpeningStudy: 'moveTree:getOpeningStudy',
   touchOpeningStudy: 'moveTree:touchOpeningStudy',
   createStudyCase: 'moveTree:createStudyCase',
@@ -84,6 +86,8 @@ export const ENGINE_CHANNELS = {
 export interface MoveTreeBridge {
   createOpeningStudy(input: CreateOpeningStudyRequest): Promise<OpeningStudy>
   listOpeningStudies(): Promise<OpeningStudy[]>
+  /** 阶段9：按起手棋子类型分组聚合的棋路列表，径向图首页用来渲染每个中心点下有哪些棋路 */
+  listOpeningRoots(): Promise<OpeningRoot[]>
   getOpeningStudy(id: string): Promise<OpeningStudy | null>
   touchOpeningStudy(id: string): Promise<void>
 

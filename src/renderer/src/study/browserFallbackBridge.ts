@@ -18,10 +18,19 @@ import type {
   CreateStudyCaseRequest
 } from '@shared/ipc'
 import { EMPTY_BOARD_FEN, STANDARD_START_FEN } from '@shared/chess'
-import type { Folder, MoveNode, OpeningStudy, StudyCase } from '@shared/moveTree'
+import type { Folder, MoveNode, OpeningPieceType, OpeningRoot, OpeningStudy, StudyCase } from '@shared/moveTree'
 import type { EngineStatus } from '@shared/engine'
 
 const STORAGE_KEY = 'chessoc-browser-fallback-db-v1'
+
+// 和 src/main/db/openingStudyRepository.ts 里的 CENTER_LABELS 保持一致，浏览器演示模式独立维护一份
+const CENTER_LABELS: Record<OpeningPieceType, string> = {
+  N: '起马局',
+  B: '飞象局',
+  C: '当头炮局',
+  R: '直车局',
+  P: '挺兵局'
+}
 
 interface FallbackDbShape {
   moveNodes: Record<string, MoveNode>
@@ -106,6 +115,20 @@ export function createBrowserFallbackBridge(): ChessOCBridge {
         return Object.values(db.openingStudies)
           .sort((a, b) => a.createdAt - b.createdAt)
           .map((row) => ({ ...row, rootNode: withChildrenIds(db, db.moveNodes[row.rootNodeId]) }))
+      },
+      async listOpeningRoots(): Promise<OpeningRoot[]> {
+        const db = loadDb()
+        const grouped = new Map<OpeningPieceType, string[]>()
+        for (const row of Object.values(db.openingStudies).sort((a, b) => a.createdAt - b.createdAt)) {
+          const studyIds = grouped.get(row.pieceType) ?? []
+          studyIds.push(row.id)
+          grouped.set(row.pieceType, studyIds)
+        }
+        return Array.from(grouped.entries()).map(([pieceType, studyIds]) => ({
+          pieceType,
+          centerLabel: CENTER_LABELS[pieceType],
+          studyIds
+        }))
       },
       async getOpeningStudy(id: string): Promise<OpeningStudy | null> {
         const db = loadDb()

@@ -19,3 +19,29 @@ export function positionToUcciSquare(pos: Position): string {
 export function moveToUcciCoord(move: Move): string {
   return positionToUcciSquare(move.from) + positionToUcciSquare(move.to)
 }
+
+/** positionToUcciSquare的反函数：把一个UCCI格子记法（如"e2"）换算回棋盘坐标 */
+export function ucciSquareToPosition(square: string): Position {
+  const file = square[0]
+  const rank = Number(square.slice(1))
+  if (!file || Number.isNaN(rank)) {
+    throw new Error(`非法UCCI格子记法："${square}"`)
+  }
+  const col = file.charCodeAt(0) - 'a'.charCodeAt(0)
+  const row = 9 - rank
+  return { row, col }
+}
+
+/**
+ * moveToUcciCoord的反函数：把引擎PV里的一步走法坐标（如"h2e2"）换算回Move。
+ * 阶段8"AI分析"要沿着引擎给出的PV逐步模拟局面，需要用到这个把引擎输出转回内部坐标。
+ */
+export function ucciCoordToMove(coord: string): Move {
+  if (coord.length !== 4) {
+    throw new Error(`非法UCCI走法记法，应为4个字符："${coord}"`)
+  }
+  return {
+    from: ucciSquareToPosition(coord.slice(0, 2)),
+    to: ucciSquareToPosition(coord.slice(2, 4))
+  }
+}
