@@ -38,7 +38,7 @@ export function WinRateChart({ history, viewingIndex, onSelectIndex }: WinRateCh
   }, [history, xScale, yScale])
 
   return (
-    <svg className="win-rate-chart" width={WIDTH} height={HEIGHT}>
+    <svg className="win-rate-chart" width="100%" height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="xMidYMid meet">
       <g transform={`translate(${PADDING.left}, ${PADDING.top})`}>
         {[0, 25, 50, 75, 100].map((tick) => (
           <g key={tick} transform={`translate(0, ${yScale(tick)})`}>

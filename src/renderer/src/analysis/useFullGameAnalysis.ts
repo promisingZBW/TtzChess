@@ -9,13 +9,16 @@ import {
   getLegalMovesFrom,
   isLegalMove,
   moveToChineseNotation,
+  moveToUcciCoord,
   opponentOf,
   parseFen,
   samePosition,
   STANDARD_START_FEN
 } from '@shared/chess'
 import type { Board, Position, Side } from '@shared/chess'
+import { clickSandboxSquare, EMPTY_SANDBOX_SELECTION, type SandboxPosition } from './sandboxPlay'
 import { winRatePercentFromPerspective } from './singlePositionAnalysis'
+import type { EngineWdl } from '@shared/engine'
 
 export interface GameHistoryEntry {
   fen: string
@@ -23,8 +26,12 @@ export interface GameHistoryEntry {
   sideToMove: Side
   /** 走到这一步的中文记谱，初始局面（第0个entry）没有走法，是null */
   moveNotation: string | null
+  /** 走到这一步的 UCCI 坐标，收藏进案例库时用来还原棋谱树 */
+  moveCoord: string | null
   /** 换算到固定视角后的胜率百分比；还在查询中是undefined，查询失败是null */
   winRatePercent: number | null | undefined
+  /** 引擎原始WDL（当前走棋方视角）；查询中是undefined，失败是null */
+  wdl: EngineWdl | null | undefined
 }
 
 interface SelectionState {
@@ -46,9 +53,16 @@ export interface UseFullGameAnalysisResult {
   isAtLatest: boolean
   jumpToIndex: (index: number) => void
   backToLatest: () => void
+  undoLastMove: () => void
+  canUndo: boolean
+
+  isSandbox: boolean
+  toggleSandbox: () => void
 
   selection: SelectionState
   handleSquareClick: (pos: Position) => void
+  board: Board
+  sideToMove: Side
 }
 
 export function useFullGameAnalysis(): UseFullGameAnalysisResult {
@@ -57,6 +71,7 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
   const [history, setHistory] = useState<GameHistoryEntry[]>([])
   const [viewingIndex, setViewingIndex] = useState(0)
   const [selection, setSelection] = useState<SelectionState>(NO_SELECTION)
+  const [sandbox, setSandbox] = useState<SandboxPosition | null>(null)
 
   function start(): void {
     const { board, sideToMove } = parseFen(STANDARD_START_FEN)
@@ -65,11 +80,14 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
       board,
       sideToMove,
       moveNotation: null,
-      winRatePercent: undefined
+      moveCoord: null,
+      winRatePercent: undefined,
+      wdl: undefined
     }
     setHistory([initialEntry])
     setViewingIndex(0)
     setSelection(NO_SELECTION)
+    setSandbox(null)
     setStarted(true)
     void queryWinRate(0, initialEntry)
   }
@@ -80,19 +98,20 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
       const percent = winRatePercentFromPerspective(result.wdl, entry.sideToMove, perspective)
       setHistory((prev) => {
         const next = [...prev]
-        if (next[index]) next[index] = { ...next[index], winRatePercent: percent }
+        if (next[index]) next[index] = { ...next[index], winRatePercent: percent, wdl: result.wdl }
         return next
       })
     } catch {
       setHistory((prev) => {
         const next = [...prev]
-        if (next[index]) next[index] = { ...next[index], winRatePercent: null }
+        if (next[index]) next[index] = { ...next[index], winRatePercent: null, wdl: null }
         return next
       })
     }
   }
 
   function jumpToIndex(index: number): void {
+    if (sandbox) return
     if (index < 0 || index >= history.length) return
     setViewingIndex(index)
     setSelection(NO_SELECTION)
@@ -102,7 +121,36 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
     jumpToIndex(history.length - 1)
   }
 
+  function undoLastMove(): void {
+    if (sandbox) return
+    if (history.length <= 1) return
+    const nextLength = history.length - 1
+    setHistory((prev) => prev.slice(0, -1))
+    setViewingIndex((prev) => Math.min(prev, nextLength - 1))
+    setSelection(NO_SELECTION)
+  }
+
+  function toggleSandbox(): void {
+    if (sandbox) {
+      setSandbox(null)
+    } else {
+      const current = history[viewingIndex]
+      if (!current) return
+      setSandbox({
+        board: current.board,
+        sideToMove: current.sideToMove,
+        selection: EMPTY_SANDBOX_SELECTION
+      })
+    }
+    setSelection(NO_SELECTION)
+  }
+
   function handleSquareClick(pos: Position): void {
+    if (sandbox) {
+      setSandbox(clickSandboxSquare(sandbox, pos))
+      return
+    }
+
     const isAtLatest = viewingIndex === history.length - 1
     if (!started || !isAtLatest) return
     const current = history[viewingIndex]
@@ -131,6 +179,7 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
 
     setSelection(NO_SELECTION)
     const notation = moveToChineseNotation(current.board, move)
+    const coord = moveToUcciCoord(move)
     const nextBoard = applyMove(current.board, move)
     const nextSide = opponentOf(current.sideToMove)
     const nextFen = boardToFen(nextBoard, nextSide)
@@ -139,7 +188,9 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
       board: nextBoard,
       sideToMove: nextSide,
       moveNotation: notation,
-      winRatePercent: undefined
+      moveCoord: coord,
+      winRatePercent: undefined,
+      wdl: undefined
     }
 
     setHistory((prev) => [...prev, nextEntry])
@@ -148,6 +199,9 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
   }
 
   const viewingEntry = history[viewingIndex] ?? null
+  const displayBoard = sandbox?.board ?? viewingEntry?.board ?? parseFen(STANDARD_START_FEN).board
+  const displaySide = sandbox?.sideToMove ?? viewingEntry?.sideToMove ?? 'red'
+  const displaySelection = sandbox?.selection ?? selection
 
   return {
     started,
@@ -160,7 +214,13 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
     isAtLatest: viewingIndex === history.length - 1,
     jumpToIndex,
     backToLatest,
-    selection,
-    handleSquareClick
+    undoLastMove,
+    canUndo: !sandbox && history.length > 1,
+    isSandbox: sandbox !== null,
+    toggleSandbox,
+    selection: displaySelection,
+    handleSquareClick,
+    board: displayBoard,
+    sideToMove: displaySide
   }
 }

@@ -1,5 +1,6 @@
 {
-  "name": "chessoc",
+  "name": "ttzchess",
+  "productName": "TtzChess",
   "version": "0.1.0",
   "description": "象棋打谱与AI分析桌面应用",
   "private": true,
@@ -15,7 +16,8 @@
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
     "test:watch": "vitest",
-    "setup:pikafish": "node scripts/setup-pikafish.mjs"
+    "setup:pikafish": "node scripts/setup-pikafish.mjs",
+    "dist:win": "electron-vite build && electron-builder --win"
   },
   "dependencies": {
     "d3": "^7.9.0",
@@ -23,13 +25,14 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "7zip-bin": "^5.2.0",
     "@eslint/js": "^10.0.1",
     "@types/d3": "^7.4.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^5.0.0",
+    "7zip-bin": "^5.2.0",
     "electron": "^43.4.0",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
     "eslint": "^10.8.1",
     "eslint-plugin-react-hooks": "^7.1.1",
@@ -38,5 +41,35 @@
     "typescript-eslint": "^8.0.0",
     "vite": "^7.3.6",
     "vitest": "^4.1.11"
+  },
+  "build": {
+    "appId": "com.ttzchess.app",
+    "productName": "TtzChess",
+    "asar": true,
+    "directories": {
+      "output": "release/${version}"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/engines/pikafish",
+        "to": "engines/pikafish"
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "zip", "arch": ["x64"] }
+      ],
+      "artifactName": "${productName}-${version}-${os}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "${productName}-${version}-setup.${ext}"
+    }
   }
 }

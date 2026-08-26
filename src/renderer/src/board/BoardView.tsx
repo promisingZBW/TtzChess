@@ -3,6 +3,7 @@
 
 import { getPieceLabel } from '@shared/chess'
 import type { Board, Position } from '@shared/chess'
+import grainTextureUrl from '../assets/grain-texture.png'
 import { readPieceDragData, setPieceDragData, type PieceDragPayload } from '../study/dragTypes'
 import { BOARD_HEIGHT, BOARD_MARGIN, BOARD_WIDTH, CELL_SIZE, COLS, ROWS, colToX, rowToY } from './boardLayout'
 
@@ -58,6 +59,48 @@ function PalaceDiagonals(): React.JSX.Element {
       <line x1={colToX(5)} y1={rowToY(0)} x2={colToX(3)} y2={rowToY(2)} />
       <line x1={colToX(3)} y1={rowToY(7)} x2={colToX(5)} y2={rowToY(9)} />
       <line x1={colToX(5)} y1={rowToY(7)} x2={colToX(3)} y2={rowToY(9)} />
+    </g>
+  )
+}
+
+/** 棋子的雕刻感斜面（径向渐变）+ 棋盘表面的宣纸/木纹肌理（复用全局背景同一张生成图），
+ * 两者都得放进SVG自己的<defs>里才能被.piece的CSS `fill: url(#pieceGradient)`和棋盘背景
+ * 的<pattern>引用到——纯CSS做不到给SVG图形填充渐变/图片，只能在SVG里预先定义好。 */
+function BoardDefs(): React.JSX.Element {
+  return (
+    <defs>
+      <radialGradient id="pieceGradient" cx="35%" cy="30%" r="75%">
+        <stop offset="0%" stopColor="#fbf1da" />
+        <stop offset="65%" stopColor="#f0dfb8" />
+        <stop offset="100%" stopColor="#d9c294" />
+      </radialGradient>
+      <pattern id="boardGrainPattern" patternUnits="userSpaceOnUse" width="220" height="220">
+        <image href={grainTextureUrl} x={0} y={0} width={220} height={220} opacity={0.12} />
+      </pattern>
+    </defs>
+  )
+}
+
+function FileCoordinates(): React.JSX.Element {
+  const topLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+  const bottomLabels = ['九', '八', '七', '六', '五', '四', '三', '二', '一']
+  return (
+    <g className="board-file-labels">
+      {topLabels.map((label, col) => (
+        <text key={`top-${col}`} x={colToX(col)} y={22} textAnchor="middle">
+          {label}
+        </text>
+      ))}
+      {bottomLabels.map((label, col) => (
+        <text
+          key={`bottom-${col}`}
+          x={colToX(col)}
+          y={BOARD_HEIGHT - 16}
+          textAnchor="middle"
+        >
+          {label}
+        </text>
+      ))}
     </g>
   )
 }
@@ -137,28 +180,42 @@ export function BoardView({ board, selected, legalTargets, onSquareClick, placem
   }
 
   return (
-    <svg
-      className="xiangqi-board"
-      width={BOARD_WIDTH}
-      height={BOARD_HEIGHT}
-      viewBox={`0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}`}
+    <div
+      className="xiangqi-board-frame"
+      style={{ '--board-w': BOARD_WIDTH, '--board-h': BOARD_HEIGHT } as React.CSSProperties}
     >
-      <rect x={0} y={0} width={BOARD_WIDTH} height={BOARD_HEIGHT} className="board-background" />
-      <HorizontalLines />
-      <VerticalLines />
-      <PalaceDiagonals />
-      {/* 边框线的位置正好贴着最外圈棋子的边缘，必须在棋子渲染之前画，
-          否则会盖在棋子上面（这条线之前被错误地放在了{intersections}后面）。 */}
-      <rect
-        x={BOARD_MARGIN - 2}
-        y={BOARD_MARGIN - 2}
-        width={BOARD_WIDTH - (BOARD_MARGIN - 2) * 2}
-        height={BOARD_HEIGHT - (BOARD_MARGIN - 2) * 2}
-        className="board-outer-border"
-        fill="none"
-      />
-      <RiverLabel />
-      {intersections}
-    </svg>
+      <svg
+        className="xiangqi-board"
+        viewBox={`0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}`}
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <BoardDefs />
+        <rect x={0} y={0} width={BOARD_WIDTH} height={BOARD_HEIGHT} className="board-background" />
+        <rect
+          x={0}
+          y={0}
+          width={BOARD_WIDTH}
+          height={BOARD_HEIGHT}
+          className="board-grain-overlay"
+          fill="url(#boardGrainPattern)"
+        />
+        <HorizontalLines />
+        <VerticalLines />
+        <PalaceDiagonals />
+        {/* 边框线的位置正好贴着最外圈棋子的边缘，必须在棋子渲染之前画，
+            否则会盖在棋子上面（这条线之前被错误地放在了{intersections}后面）。 */}
+        <rect
+          x={BOARD_MARGIN - 2}
+          y={BOARD_MARGIN - 2}
+          width={BOARD_WIDTH - (BOARD_MARGIN - 2) * 2}
+          height={BOARD_HEIGHT - (BOARD_MARGIN - 2) * 2}
+          className="board-outer-border"
+          fill="none"
+        />
+        <RiverLabel />
+        <FileCoordinates />
+        {intersections}
+      </svg>
+    </div>
   )
 }

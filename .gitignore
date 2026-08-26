@@ -20,3 +20,7 @@ journal.md
 # 运行 `npm run setup:pikafish` 会自动下载解压到这里，见 resources/engines/README.md
 /resources/engines/pikafish/
 /resources/engines/.tmp-setup/
+
+# 用户棋路数据：整夹拷贝即可同步到另一台电脑，不进版本库
+/data/*
+!/data/README.md

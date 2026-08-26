@@ -9,7 +9,7 @@ import type {
 } from '../shared/ipc'
 
 const api: ChessOCBridge = {
-  appName: 'ChessOC',
+    appName: 'TtzChess',
   versions: {
     electron: process.versions.electron ?? '',
     chrome: process.versions.chrome ?? '',
@@ -32,6 +32,7 @@ const api: ChessOCBridge = {
     loadTree: (rootNodeId: string) => ipcRenderer.invoke(MOVE_TREE_CHANNELS.loadTree, rootNodeId),
     createMoveNode: (input: CreateMoveNodeRequest) =>
       ipcRenderer.invoke(MOVE_TREE_CHANNELS.createMoveNode, input),
+    deleteMoveNode: (nodeId: string) => ipcRenderer.invoke(MOVE_TREE_CHANNELS.deleteMoveNode, nodeId),
     setNote: (nodeId: string, note: string | null) =>
       ipcRenderer.invoke(MOVE_TREE_CHANNELS.setNote, nodeId, note),
     updateBoardState: (nodeId: string, boardStateFEN: string) =>

@@ -1,8 +1,7 @@
-// 单次分析结果的展示栏（dev guide 7.1节规定的格式），单次分析页面和整局分析页面里
-// "对某一步触发单次分析"都复用这一个组件，保证两处的展示格式完全一致。
-
+import { PIN_DETECTION_DISCLAIMER, WIN_RATE_FORMULA_HINT } from './singlePositionAnalysis'
 import type { SingleAnalysisResult } from './singlePositionAnalysis'
-import { describeThreat } from './singlePositionAnalysis'
+import { WinRateValue } from './WinRateValue'
+import { explainAnalysisStep } from './explainStep'
 
 interface SingleAnalysisResultsPanelProps {
   status: 'idle' | 'loading' | 'done' | 'error'
@@ -39,34 +38,46 @@ export function SingleAnalysisResultsPanel({
   return (
     <div className="analysis-results">
       <p className="analysis-root-summary">
-        当前局面（{PERSPECTIVE_LABEL[result.perspective]}视角）胜率：<strong>{result.rootWinRatePercent}%</strong>
-        （胜{result.rootWdl[0]} 和{result.rootWdl[1]} 负{result.rootWdl[2]}，千分制）
+        当前局面（{PERSPECTIVE_LABEL[result.perspective]}视角）胜率：
+        <WinRateValue wdl={result.rootWdl} wdlSide={result.perspective} perspective={result.perspective} />
       </p>
       {result.steps.length === 0 ? (
         <p className="analysis-hint">引擎没有给出有效的应对路线（可能已经是绝杀/困毙局面）。</p>
       ) : (
-        <ol className="analysis-step-list">
-          {result.steps.map((step) => (
-            <li key={step.stepNumber} className="analysis-step">
-              <div className="analysis-step-headline">
-                第{step.stepNumber}步：走法=<strong>{step.moveNotation}</strong>，引擎胜率={step.winRateBeforePercent}%→
-                {step.winRateAfterPercent}%
-              </div>
-              <div className="analysis-step-detail">
-                子力差（红-黑）={step.materialDiffBefore}→{step.materialDiffAfter}，机动性差（红-黑）=
-                {step.mobilityDiffBefore}→{step.mobilityDiffAfter}
-              </div>
-              <div className="analysis-step-detail">
-                威胁=
-                {step.threats.length === 0
-                  ? '无'
-                  : step.threats.map(describeThreat).join('、')}
-                {step.isDiscoveredThreat && <span className="analysis-tag-discovered"> 疑似抽将模式</span>}
-              </div>
-              <div className="analysis-step-note">备注：{step.note}</div>
-            </li>
-          ))}
-        </ol>
+        <>
+          <ol className="analysis-step-list">
+            {result.steps.map((step) => {
+              const explained = explainAnalysisStep(step, result.perspective)
+              const materialChanged = step.materialDiffBefore !== step.materialDiffAfter
+              return (
+                <li key={step.stepNumber} className="analysis-step">
+                  <div className="analysis-step-kicker">
+                    第{step.stepNumber}步：<strong>{step.moveNotation}</strong>
+                  </div>
+                  <div className={`analysis-step-headline win-rate-${explained.winRateTrend}`}>
+                    {explained.headline}
+                  </div>
+                  <div className="analysis-step-detail">
+                    胜率
+                    <span
+                      className={`win-rate-value win-rate-change-${explained.winRateTrend}`}
+                      title={WIN_RATE_FORMULA_HINT}
+                    >
+                      {step.winRateBeforePercent}%→{step.winRateAfterPercent}%
+                      <span className="win-rate-tooltip" role="tooltip">
+                        {WIN_RATE_FORMULA_HINT}
+                      </span>
+                    </span>
+                    {materialChanged &&
+                      `，子力差（红-黑）=${step.materialDiffBefore}→${step.materialDiffAfter}`}
+                    ，机动性差（红-黑）={step.mobilityDiffBefore}→{step.mobilityDiffAfter}
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+          <p className="analysis-pin-disclaimer">{PIN_DETECTION_DISCLAIMER}</p>
+        </>
       )}
     </div>
   )

@@ -1,5 +1,5 @@
-// 阶段5：中局/终局案例库列表页（dev guide 第6节）。卡片列表 + 按标题搜索 + 文件夹增删改，
-// 点击案例卡片直接进入阶段4做好的打谱详情界面（复用同一套UI，案例的根局面是空白棋盘）。
+// 阶段5：中局/终局/整局案例库列表页（dev guide 第6节）。卡片列表 + 按标题搜索 + 文件夹增删改，
+// 点击案例卡片直接进入阶段4做好的打谱详情界面。中局/残局从空白棋盘摆局；整局从标准开局起手。
 //
 // 文件夹用"面包屑路径栈"来表示当前浏览到哪一层：folderPath是从顶层到当前文件夹的完整路径，
 // 数组最后一项就是"现在在哪个文件夹里"，点面包屑上的某一段可以直接跳回那一层，逻辑和文件管理器的
@@ -11,12 +11,13 @@ import type { StudySubjectRef } from '../study/useStudySession'
 
 interface CaseLibraryPageProps {
   onOpenCase: (ref: StudySubjectRef) => void
-  onBack: () => void
+  onBack?: () => void
 }
 
 const CASE_TYPE_LABELS: Record<StudyCaseType, string> = {
   midgame: '中局',
-  endgame: '残局'
+  endgame: '残局',
+  fullgame: '整局'
 }
 
 function formatUpdatedAt(ts: number): string {
@@ -208,8 +209,8 @@ export function CaseLibraryPage({ onOpenCase, onBack }: CaseLibraryPageProps): R
   return (
     <div className="library-page">
       <div className="library-toolbar">
-        <button onClick={onBack}>← 返回首页</button>
-        <h1 className="library-title">中局 / 残局案例库</h1>
+        {onBack && <button onClick={onBack}>← 返回首页</button>}
+        <h1 className="library-title">中局 / 残局 / 整局案例库</h1>
         <input
           className="library-search-input"
           type="text"
@@ -305,7 +306,7 @@ export function CaseLibraryPage({ onOpenCase, onBack }: CaseLibraryPageProps): R
               onChange={(e) => setNewCaseTitle(e.target.value)}
             />
             <button onClick={handleCreateCase} disabled={!newCaseTitle.trim()}>
-              新建案例（从空白棋盘摆局）
+              {newCaseType === 'fullgame' ? '新建整局（从标准开局打谱）' : '新建案例（从空白棋盘摆局）'}
             </button>
           </div>
         )}
@@ -314,7 +315,7 @@ export function CaseLibraryPage({ onOpenCase, onBack }: CaseLibraryPageProps): R
           <p>加载中…</p>
         ) : displayedCases.length === 0 ? (
           <p className="home-empty-hint">
-            {isSearching ? '没有找到匹配的案例。' : '这里还没有案例，创建一个从空白棋盘开始摆局吧。'}
+            {isSearching ? '没有找到匹配的案例。' : '这里还没有案例。中局/残局从空白棋盘摆局，整局则从所有棋子摆好的开局开始打谱。'}
           </p>
         ) : (
           <div className="library-case-grid">

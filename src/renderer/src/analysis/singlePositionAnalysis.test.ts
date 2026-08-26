@@ -12,12 +12,17 @@ function fakeResult(wdl: EngineWdl, pv: string[] = []): EngineAnalysisResult {
 }
 
 describe('winRatePercentFromPerspective', () => {
-  it('WDL视角和目标视角一致时，直接取win字段换算成百分比', () => {
-    expect(winRatePercentFromPerspective([700, 200, 100], 'red', 'red')).toBe(70)
+  it('排除和棋：胜700负100时，胜率是 700/(700+100)=87.5%，不是 700/1000=70%', () => {
+    expect(winRatePercentFromPerspective([700, 200, 100], 'red', 'red')).toBe(87.5)
   })
 
-  it('WDL视角和目标视角相反时，用loss字段换算（对方的负就是我方的胜）', () => {
-    expect(winRatePercentFromPerspective([300, 200, 500], 'black', 'red')).toBe(50)
+  it('WDL视角和目标视角相反时，用对方的负当作我方的胜，再排除和棋', () => {
+    // 黑方视角 [300, 200, 500] → 红方是胜500负300 → 500/800=62.5
+    expect(winRatePercentFromPerspective([300, 200, 500], 'black', 'red')).toBe(62.5)
+  })
+
+  it('全是和棋时没有胜负可除，记 50%', () => {
+    expect(winRatePercentFromPerspective([0, 1000, 0], 'red', 'red')).toBe(50)
   })
 })
 
@@ -39,22 +44,23 @@ describe('runSinglePositionAnalysis（沿PV模拟+胜率视角统一，用假引
     const result = await runSinglePositionAnalysis(board, 'red', fakeAnalyze, { pvSteps: 2 })
 
     expect(result.perspective).toBe('red')
-    expect(result.rootWinRatePercent).toBe(70)
+    expect(result.rootWinRatePercent).toBe(87.5)
     expect(result.steps).toHaveLength(2)
 
     const [step1, step2] = result.steps
     expect(step1.moveNotation).toBe('车五进三')
-    expect(step1.winRateBeforePercent).toBe(70)
-    expect(step1.winRateAfterPercent).toBe(50)
+    expect(step1.winRateBeforePercent).toBe(87.5)
+    expect(step1.winRateAfterPercent).toBe(62.5)
     // 车走到(6,4)正好和阶段7 features.test.ts里"rook_threatens_horse"是同一个局面，子力差330完全吻合
     expect(step1.materialDiffBefore).toBe(330)
     expect(step1.materialDiffAfter).toBe(330)
     expect(step1.threats).toHaveLength(1)
     expect(step1.isDiscoveredThreat).toBe(false) // 车自己走过去造成的直接威胁，不是抽将
-    expect(step1.note).toContain('未检测牵制')
+    expect(step1.moverSide).toBe('red')
+    expect(step1).not.toHaveProperty('note')
 
-    expect(step2.winRateBeforePercent).toBe(50) // 承接上一步换算后的结果，没有重复查询根节点
-    expect(step2.winRateAfterPercent).toBe(65)
+    expect(step2.winRateBeforePercent).toBe(62.5) // 承接上一步换算后的结果，没有重复查询根节点
+    expect(step2.winRateAfterPercent).toBe(76.5)
     expect(step2.threats).toHaveLength(0) // 黑马跳开之后没有形成对红方高价值棋子的威胁
 
     // 一共应该只查询了3次引擎：根节点1次 + 每步PV各1次，没有多余的重复调用

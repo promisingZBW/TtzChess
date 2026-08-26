@@ -18,7 +18,18 @@ function createMainWindow(): void {
     minHeight: 640,
     show: false,
     autoHideMenuBar: true,
-    title: 'ChessOC',
+    title: 'TtzChess',
+    // 深色底色，避免窗口在页面加载完成前闪一下刺眼的白屏
+    backgroundColor: '#170f0a',
+    // hidden + titleBarOverlay：去掉系统默认的白色标题栏，
+    // 只保留右上角最小化/最大化/关闭三个按钮，颜色跟着深色主题走，
+    // 标题文字和可拖拽区域改由渲染进程里的 TitleBar 组件自己画（见 src/renderer/src/TitleBar.tsx）
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#2a1d14',
+      symbolColor: '#c9a15a',
+      height: 36
+    },
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false

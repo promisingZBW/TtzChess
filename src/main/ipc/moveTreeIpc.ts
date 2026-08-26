@@ -2,7 +2,8 @@
 // 这一层不包含任何业务逻辑，只是"IPC channel名 -> 调用哪个仓库方法"的映射表。
 
 import { ipcMain } from 'electron'
-import { EMPTY_BOARD_FEN, STANDARD_START_FEN } from '@shared/chess'
+import { STANDARD_START_FEN } from '@shared/chess'
+import { initialFenForStudyCase } from '@shared/moveTree'
 import {
   MOVE_TREE_CHANNELS,
   type CreateFolderRequest,
@@ -32,7 +33,7 @@ export function registerMoveTreeIpc(db: ChessDatabase): void {
       type: input.type,
       title: input.title,
       folderId: input.folderId ?? null,
-      initialFEN: EMPTY_BOARD_FEN // 中局/终局案例从空白棋盘开始，用户自己摆局
+      initialFEN: initialFenForStudyCase(input.type)
     })
   )
   ipcMain.handle(MOVE_TREE_CHANNELS.listStudyCases, () => db.studyCases.listAll())
@@ -47,6 +48,11 @@ export function registerMoveTreeIpc(db: ChessDatabase): void {
   ipcMain.handle(MOVE_TREE_CHANNELS.createMoveNode, (_event, input: CreateMoveNodeRequest) =>
     db.moveNodes.create(input)
   )
+  ipcMain.handle(MOVE_TREE_CHANNELS.deleteMoveNode, (_event, nodeId: string) => {
+    const node = db.moveNodes.getById(nodeId)
+    if (!node || node.parentId === null) return
+    db.moveNodes.deleteSubtree(nodeId)
+  })
   ipcMain.handle(MOVE_TREE_CHANNELS.setNote, (_event, nodeId: string, note: string | null) =>
     db.moveNodes.setNote(nodeId, note)
   )

@@ -1,6 +1,6 @@
 // 右侧"光球棋谱树"面板（dev guide 5.3节）：用 d3.tree() 计算节点的布局坐标（自上而下逐层展开），
 // 渲染成SVG的圆点+连线。交互：左键跳转局面（同时若该节点有笔记就弹出笔记方框）、
-// 右键弹出菜单（添加分支/增加笔记）。
+// 右键弹出菜单（删除当前光球/增加笔记）。走了不同的棋会自动长出新分支，不再单独提供"添加分支"。
 //
 // 简化说明（已在journal.md记录）：guide原文描述笔记方框"在光球左侧展开"，这里简化成
 // 面板底部的一个固定笔记区域，不做逐节点的精确像素定位——交互功能（查看/编辑/关闭笔记）
@@ -34,7 +34,7 @@ interface MoveTreePanelProps {
   currentNodeId: string | null
   activePath: string[]
   onJumpToNode: (nodeId: string) => void
-  onAddBranch: (nodeId: string) => void
+  onDeleteNode: (nodeId: string) => Promise<void>
   onSetNote: (nodeId: string, text: string | null) => Promise<void>
 }
 
@@ -44,12 +44,13 @@ export function MoveTreePanel({
   currentNodeId,
   activePath,
   onJumpToNode,
-  onAddBranch,
+  onDeleteNode,
   onSetNote
 }: MoveTreePanelProps): React.JSX.Element {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [noteBox, setNoteBox] = useState<NoteBoxState | null>(null)
   const [noteDraft, setNoteDraft] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<{ nodeId: string; message: string } | null>(null)
 
   const layout = useMemo(() => {
     const hierarchyData = buildHierarchy(nodes, rootNodeId)
@@ -88,6 +89,21 @@ export function MoveTreePanel({
     setNoteDraft(nodes.get(nodeId)?.note ?? '')
     setNoteBox({ nodeId, mode })
     setContextMenu(null)
+  }
+
+  function requestDelete(nodeId: string): void {
+    setContextMenu(null)
+    const node = nodes.get(nodeId)
+    if (!node) return
+    if (node.parentId === null) return
+    if (node.childrenIds.length === 0) {
+      void onDeleteNode(nodeId)
+      return
+    }
+    setPendingDelete({
+      nodeId,
+      message: `「${node.move || '这一步'}」后面还有后续棋路。删除后，这个光球以及它后面的全部走法都会被去掉，确定删除吗？`
+    })
   }
 
   if (!layout) {
@@ -141,15 +157,34 @@ export function MoveTreePanel({
         <>
           <div className="context-menu-overlay" onClick={() => setContextMenu(null)} />
           <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
-            <button
-              onClick={() => {
-                onAddBranch(contextMenu.nodeId)
-                setContextMenu(null)
-              }}
-            >
-              添加分支
-            </button>
+            {nodes.get(contextMenu.nodeId)?.parentId !== null && (
+              <button className="context-menu-danger" onClick={() => requestDelete(contextMenu.nodeId)}>
+                删除当前小光球
+              </button>
+            )}
             <button onClick={() => openNoteBox(contextMenu.nodeId, 'edit')}>增加笔记</button>
+          </div>
+        </>
+      )}
+
+      {pendingDelete && (
+        <>
+          <div className="confirm-dialog-overlay" onClick={() => setPendingDelete(null)} />
+          <div className="confirm-dialog">
+            <p className="confirm-dialog-message">{pendingDelete.message}</p>
+            <div className="confirm-dialog-actions">
+              <button onClick={() => setPendingDelete(null)}>取消</button>
+              <button
+                className="confirm-dialog-danger"
+                onClick={async () => {
+                  const { nodeId } = pendingDelete
+                  setPendingDelete(null)
+                  await onDeleteNode(nodeId)
+                }}
+              >
+                确认删除
+              </button>
+            </div>
           </div>
         </>
       )}

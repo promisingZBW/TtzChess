@@ -31,6 +31,11 @@ function toFileNumber(col: number, side: Side): number {
   return side === 'red' ? 9 - col : col + 1
 }
 
+/** 列号按该方记谱习惯转成文字：红方「五」，黑方「5」。分析里描述威胁位置时用这个，避免写出 e9 这种引擎坐标 */
+export function fileLabel(col: number, side: Side): string {
+  return formatNumber(toFileNumber(col, side), side)
+}
+
 function pieceName(piece: Piece): string {
   return PIECE_NAME[piece.side][piece.kind]
 }

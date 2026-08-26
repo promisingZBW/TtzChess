@@ -35,7 +35,7 @@ export interface OpeningStudy {
   updatedAt: number
 }
 
-export type StudyCaseType = 'midgame' | 'endgame'
+export type StudyCaseType = 'midgame' | 'endgame' | 'fullgame'
 
 /** 中局/终局案例 */
 export interface StudyCase {

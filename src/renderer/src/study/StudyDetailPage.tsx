@@ -1,4 +1,4 @@
-// 打谱详情界面（dev guide 第5节）：左边棋盘 + 顶部工具栏（返回/保存/沙盘） + 右上前进后退，
+// 打谱详情界面（dev guide 第5节）：左边棋盘 + 顶部工具栏（返回/保存/沙盘） + 棋盘下方前进后退，
 // 右边光球棋谱树面板。摆局阶段（案例专属）额外多一列棋子摆放区和"开始打谱"按钮。
 // 这个文件只负责"组装+布局"，具体状态逻辑都在 useStudySession，交互细节在子组件里。
 
@@ -7,6 +7,8 @@ import { BoardView } from '../board/BoardView'
 import type { PieceDragPayload } from './dragTypes'
 import { MoveTreePanel } from './MoveTreePanel'
 import { PlacementTray } from './PlacementTray'
+import { PlacementGhost } from './PlacementGhost'
+import { useKeyboardPlacement } from './useKeyboardPlacement'
 import { useStudySession, type StudySubjectRef } from './useStudySession'
 
 interface StudyDetailPageProps {
@@ -22,6 +24,7 @@ const SAVE_BUTTON_LABEL: Record<'idle' | 'saving' | 'saved', string> = {
 
 export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): React.JSX.Element {
   const session = useStudySession(subjectRef)
+  const keyboard = useKeyboardPlacement(session.mode === 'placing')
 
   function handleDropPiece(pos: Position, payload: PieceDragPayload): void {
     if (payload.fromBoard) {
@@ -69,12 +72,15 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
 
       <div className="study-body">
         <div className="study-board-column">
-          {session.mode === 'placing' && <PlacementTray onRemoveFromBoard={session.removePlacedPiece} />}
+          {session.mode === 'placing' && (
+            <PlacementTray
+              onRemoveFromBoard={session.removePlacedPiece}
+              heldPiece={keyboard.heldPiece}
+              onSelectPiece={keyboard.setHeldPiece}
+            />
+          )}
 
           <div className="study-board-center">
-            {session.pendingBranchFromId && (
-              <p className="study-hint">已选中分支起点，请在棋盘上走一步棋来生成新分支</p>
-            )}
             {session.isSandbox && (
               <p className="study-hint study-hint-sandbox">沙盘演练中：这里的走法不会被保存到棋谱树</p>
             )}
@@ -83,13 +89,22 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
               board={session.board}
               selected={session.selection.selected}
               legalTargets={session.selection.legalTargets}
-              onSquareClick={session.mode === 'recording' ? session.handleSquareClick : undefined}
+              onSquareClick={
+                session.mode === 'recording'
+                  ? session.handleSquareClick
+                  : keyboard.heldPiece
+                    ? (pos) => session.placePiece(pos, keyboard.heldPiece as Piece)
+                    : undefined
+              }
               placement={
                 session.mode === 'placing'
                   ? { onDropPiece: handleDropPiece, onRemovePiece: session.removePlacedPiece }
                   : undefined
               }
             />
+            {session.mode === 'placing' && keyboard.heldPiece && (
+              <PlacementGhost piece={keyboard.heldPiece} pointer={keyboard.pointer} />
+            )}
 
             {session.mode === 'placing' && (
               <button className="start-recording-button" onClick={session.startRecording}>
@@ -115,7 +130,7 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
             currentNodeId={session.currentNodeId}
             activePath={session.activePath}
             onJumpToNode={session.jumpToNode}
-            onAddBranch={session.prepareBranchFrom}
+            onDeleteNode={session.deleteNode}
             onSetNote={session.setNoteText}
           />
         )}

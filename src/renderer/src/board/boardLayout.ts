@@ -2,7 +2,8 @@
 // 单独拆出来是因为 BoardView 画线、画子、算点击命中都要用同一套坐标系，避免各处各写一份数字。
 
 export const CELL_SIZE = 60
-export const BOARD_MARGIN = 40
+/** 要比棋子半径（24）再多留一截，路数文字才能画在棋子圆外面，不会被挡住 */
+export const BOARD_MARGIN = 72
 export const COLS = 9
 export const ROWS = 10
 

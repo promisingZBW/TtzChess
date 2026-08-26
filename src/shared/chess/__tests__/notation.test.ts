@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Board, Piece } from '@shared/chess'
-import { createInitialBoard, moveToChineseNotation } from '@shared/chess'
+import { createInitialBoard, fileLabel, moveToChineseNotation } from '@shared/chess'
 
 function emptyBoard(): Board {
   return Array.from({ length: 10 }, () => Array.from({ length: 9 }, () => null))
@@ -102,5 +102,17 @@ describe('moveToChineseNotation：同类子歧义消解（前/后/中）', () =>
       to: { row: 5, col: 4 }
     })
     expect(notation).toBe('兵五进一')
+  })
+})
+
+describe('fileLabel：列号按红黑各自记谱习惯转成路数文字', () => {
+  it('红方 col=4 是五，黑方 col=4 是 5', () => {
+    expect(fileLabel(4, 'red')).toBe('五')
+    expect(fileLabel(4, 'black')).toBe('5')
+  })
+
+  it('红方最右 col=8 是一，黑方最左 col=0 是 1', () => {
+    expect(fileLabel(8, 'red')).toBe('一')
+    expect(fileLabel(0, 'black')).toBe('1')
   })
 })

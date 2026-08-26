@@ -60,6 +60,7 @@ export const MOVE_TREE_CHANNELS = {
   touchStudyCase: 'moveTree:touchStudyCase',
   loadTree: 'moveTree:loadTree',
   createMoveNode: 'moveTree:createMoveNode',
+  deleteMoveNode: 'moveTree:deleteMoveNode',
   setNote: 'moveTree:setNote',
   updateBoardState: 'moveTree:updateBoardState',
 
@@ -99,6 +100,8 @@ export interface MoveTreeBridge {
   /** 从某个根节点开始，把整棵子树都读回来（数组形式，renderer拿到后自己拼成 id->MoveNode 的Map） */
   loadTree(rootNodeId: string): Promise<MoveNode[]>
   createMoveNode(input: CreateMoveNodeRequest): Promise<MoveNode>
+  /** 删除一个光球及其后续子树；起始局面（根节点）不允许删 */
+  deleteMoveNode(nodeId: string): Promise<void>
   setNote(nodeId: string, note: string | null): Promise<MoveNode | null>
   updateBoardState(nodeId: string, boardStateFEN: string): Promise<MoveNode | null>
 

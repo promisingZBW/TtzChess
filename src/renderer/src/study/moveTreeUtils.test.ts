@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { MoveNode } from '@shared/moveTree'
-import { buildHierarchy, computePathFromRoot } from './moveTreeUtils'
+import { buildHierarchy, collectSubtreeIds, computePathFromRoot, nextForwardNodeId } from './moveTreeUtils'
 
 function makeNode(overrides: Partial<MoveNode> & Pick<MoveNode, 'id' | 'parentId'>): MoveNode {
   return {
@@ -61,5 +61,34 @@ describe('computePathFromRoot', () => {
   it('对另一条分支的节点也能返回正确路径，不会串到别的分支上', () => {
     const nodes = buildSampleTree()
     expect(computePathFromRoot(nodes, 'c')).toEqual(['root', 'c'])
+  })
+})
+
+describe('nextForwardNodeId', () => {
+  it('还没走到路径末尾时，沿原路前进一步', () => {
+    const nodes = buildSampleTree()
+    expect(nextForwardNodeId(nodes, ['root', 'a', 'b'], 0)).toBe('a')
+    expect(nextForwardNodeId(nodes, ['root', 'a', 'b'], 1)).toBe('b')
+  })
+
+  it('已经在路径末尾、但还有子节点时，走进第一个子节点，这样可以连续前进', () => {
+    const nodes = buildSampleTree()
+    expect(nextForwardNodeId(nodes, ['root'], 0)).toBe('a')
+    expect(nextForwardNodeId(nodes, ['root', 'a'], 1)).toBe('b')
+  })
+
+  it('叶子节点没有下一步', () => {
+    const nodes = buildSampleTree()
+    expect(nextForwardNodeId(nodes, ['root', 'a', 'b'], 2)).toBeNull()
+    expect(nextForwardNodeId(nodes, ['root', 'c'], 1)).toBeNull()
+  })
+})
+
+describe('collectSubtreeIds', () => {
+  it('叶子只包含自己，中间节点包含自己和全部子孙', () => {
+    const nodes = buildSampleTree()
+    expect(collectSubtreeIds(nodes, 'b')).toEqual(['b'])
+    expect(collectSubtreeIds(nodes, 'a')).toEqual(['a', 'b'])
+    expect(collectSubtreeIds(nodes, 'root')).toEqual(['root', 'a', 'c', 'b'])
   })
 })

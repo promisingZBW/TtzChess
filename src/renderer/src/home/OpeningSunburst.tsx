@@ -12,12 +12,12 @@ import type { OpeningPieceType } from '@shared/moveTree'
 import { getPieceLabel } from '@shared/chess'
 import type { SunburstCenterData, SunburstStudyNode } from './openingSunburstUtils'
 
-const CANVAS_SIZE = 320
+const CANVAS_SIZE = 240
 const CENTER = CANVAS_SIZE / 2
-const HUB_RADIUS = 28
-const SPOKE_LENGTH = 82
-const BALL_RADIUS = 9
-const LABEL_GAP = 10
+const HUB_RADIUS = 34
+const SPOKE_LENGTH = 80
+const BALL_RADIUS = 10
+const LABEL_GAP = 12
 
 interface SpokeLayout {
   study: SunburstStudyNode
@@ -62,7 +62,11 @@ function OpeningSunburstCenter({
 
   return (
     <div className="sunburst-center">
-      <svg width={CANVAS_SIZE} height={CANVAS_SIZE} viewBox={`0 0 ${CANVAS_SIZE} ${CANVAS_SIZE}`}>
+      <svg
+        className="sunburst-canvas"
+        viewBox={`0 0 ${CANVAS_SIZE} ${CANVAS_SIZE}`}
+        preserveAspectRatio="xMidYMid meet"
+      >
         <g transform={`translate(${CENTER}, ${CENTER})`}>
           {spokes.map(({ study, angle }) => {
             const cos = Math.cos(angle)

@@ -2,7 +2,7 @@
 // 两个子功能选项——单次分析（摆一个局面分析一下）、整局分析（走一整局，看胜率走势）。
 
 interface AnalysisHomePageProps {
-  onBack: () => void
+  onBack?: () => void
   onOpenSingleAnalysis: () => void
   onOpenFullGameAnalysis: () => void
 }
@@ -13,13 +13,15 @@ export function AnalysisHomePage({
   onOpenFullGameAnalysis
 }: AnalysisHomePageProps): React.JSX.Element {
   return (
-    <div className="home-page">
-      <header className="study-toolbar">
-        <button className="study-toolbar-back" onClick={onBack}>
-          ← 返回首页
-        </button>
-        <h2 className="study-title">AI 分析</h2>
-      </header>
+    <div className={onBack ? 'home-page' : 'home-embedded-panel'}>
+      {onBack && (
+        <header className="study-toolbar">
+          <button className="study-toolbar-back" onClick={onBack}>
+            ← 返回首页
+          </button>
+          <h2 className="study-title">AI 分析</h2>
+        </header>
+      )}
 
       <section className="home-section analysis-entry-section">
         <button className="analysis-entry-card" onClick={onOpenSingleAnalysis}>

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { STANDARD_START_FEN } from '@shared/chess'
 import { createChessDatabase, type ChessDatabase } from '../index'
 
 let db: ChessDatabase
@@ -77,5 +78,15 @@ describe('StudyCaseRepository', () => {
     expect(db.studyCases.getById(studyCase.id)).toBeNull()
     expect(db.moveNodes.getById(studyCase.rootNode.id)).toBeNull()
     expect(db.moveNodes.getById(child.id)).toBeNull()
+  })
+
+  it('可以创建整局案例，根局面是传入的开局 FEN', () => {
+    const studyCase = db.studyCases.create({
+      type: 'fullgame',
+      title: '一盘完整对局',
+      initialFEN: STANDARD_START_FEN
+    })
+    expect(studyCase.type).toBe('fullgame')
+    expect(studyCase.rootNode.boardStateFEN).toBe(STANDARD_START_FEN)
   })
 })

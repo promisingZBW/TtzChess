@@ -17,8 +17,9 @@ import type {
   CreateOpeningStudyRequest,
   CreateStudyCaseRequest
 } from '@shared/ipc'
-import { EMPTY_BOARD_FEN, STANDARD_START_FEN } from '@shared/chess'
+import { STANDARD_START_FEN } from '@shared/chess'
 import type { Folder, MoveNode, OpeningPieceType, OpeningRoot, OpeningStudy, StudyCase } from '@shared/moveTree'
+import { initialFenForStudyCase } from '@shared/moveTree'
 import type { EngineStatus } from '@shared/engine'
 
 const STORAGE_KEY = 'chessoc-browser-fallback-db-v1'
@@ -98,7 +99,7 @@ function createMoveNode(db: FallbackDbShape, input: CreateMoveNodeRequest | { pa
 
 export function createBrowserFallbackBridge(): ChessOCBridge {
   return {
-    appName: 'ChessOC（浏览器演示模式，数据存在localStorage，不是真正的SQLite）',
+    appName: 'TtzChess（浏览器演示模式，数据存在localStorage，不是真正的SQLite）',
     versions: { electron: '-', chrome: navigator.userAgent, node: '-' },
     moveTree: {
       async createOpeningStudy(input: CreateOpeningStudyRequest): Promise<OpeningStudy> {
@@ -146,7 +147,12 @@ export function createBrowserFallbackBridge(): ChessOCBridge {
 
       async createStudyCase(input: CreateStudyCaseRequest): Promise<StudyCase> {
         const db = loadDb()
-        const rootNode = createMoveNode(db, { parentId: null, move: '', moveCoord: '', boardStateFEN: EMPTY_BOARD_FEN })
+        const rootNode = createMoveNode(db, {
+          parentId: null,
+          move: '',
+          moveCoord: '',
+          boardStateFEN: initialFenForStudyCase(input.type)
+        })
         const now = Date.now()
         const id = crypto.randomUUID()
         const folderId = input.folderId ?? null
@@ -292,6 +298,13 @@ export function createBrowserFallbackBridge(): ChessOCBridge {
         if (!row) return
         delete db.studyCases[id]
         deleteMoveNodeSubtree(db, row.rootNodeId)
+        saveDb(db)
+      },
+      async deleteMoveNode(nodeId: string): Promise<void> {
+        const db = loadDb()
+        const node = db.moveNodes[nodeId]
+        if (!node || node.parentId === null) return
+        deleteMoveNodeSubtree(db, nodeId)
         saveDb(db)
       }
     },

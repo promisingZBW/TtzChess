@@ -47,3 +47,36 @@ export function computePathFromRoot(nodes: Map<string, MoveNode>, nodeId: string
   }
   return path.reverse()
 }
+
+/** 收集某个节点及其全部子孙的 id，删除光球时用来同步清掉本地缓存 */
+export function collectSubtreeIds(nodes: Map<string, MoveNode>, rootId: string): string[] {
+  const ids: string[] = []
+  const queue = [rootId]
+  const visited = new Set<string>()
+  while (queue.length > 0) {
+    const id = queue.shift() as string
+    if (visited.has(id)) continue
+    visited.add(id)
+    ids.push(id)
+    const node = nodes.get(id)
+    if (node) queue.push(...node.childrenIds)
+  }
+  return ids
+}
+
+/**
+ * 前进时下一步该去哪个节点：
+ * - 当前还不在 activePath 末尾，就沿这条已经走过的路往前走（保证后退后再前进回到原路）
+ * - 已经在末尾，但当前节点还有子节点，就走进第一个子节点（主线），这样可以连续按前进
+ */
+export function nextForwardNodeId(
+  nodes: Map<string, MoveNode>,
+  activePath: string[],
+  cursorIndex: number
+): string | null {
+  if (cursorIndex < 0 || cursorIndex >= activePath.length) return null
+  if (cursorIndex < activePath.length - 1) return activePath[cursorIndex + 1]
+  const current = nodes.get(activePath[cursorIndex])
+  if (!current || current.childrenIds.length === 0) return null
+  return current.childrenIds[0]
+}

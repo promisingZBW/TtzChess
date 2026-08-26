@@ -72,8 +72,8 @@ export class EngineService {
         reason: '未找到Pikafish引擎二进制文件，请先运行 npm run setup:pikafish 下载'
       }
     }
-    // state === 'idle'：已经找到候选二进制，只是还没真正启动过子进程（第一次调用analyzePosition时才会启动）
-    return { state: 'unavailable', reason: '引擎尚未启动，调用一次分析会自动启动' }
+    // idle：二进制已经找到，第一次分析时才会拉起子进程。这不是故障，UI 不必一直警告。
+    return { state: 'idle' }
   }
 
   async analyzePosition(fen: string, depth: number = DEFAULT_ANALYSIS_DEPTH): Promise<EngineAnalysisResult> {

@@ -20,6 +20,7 @@ export interface EngineAnalysisResult {
 }
 
 export type EngineStatus =
+  | { state: 'idle' }
   | { state: 'unavailable'; reason: string }
   | { state: 'starting' }
   | { state: 'ready'; executablePath: string }

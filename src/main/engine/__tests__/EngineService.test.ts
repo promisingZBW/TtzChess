@@ -86,6 +86,11 @@ describe('EngineService', () => {
     expect(service.getStatus().state).toBe('unavailable')
   })
 
+  it('有候选但还没启动时，状态是 idle，不是 unavailable', () => {
+    service = new EngineService({ engineRootDir: FIXTURE_DIR, candidates: [fakeCandidate('normal')] })
+    expect(service.getStatus()).toEqual({ state: 'idle' })
+  })
+
   it('所有候选都启动失败时，报错信息里能看到具体原因，而不是静默挂起', async () => {
     service = new EngineService({
       engineRootDir: FIXTURE_DIR,

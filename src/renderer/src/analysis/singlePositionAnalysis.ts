@@ -8,15 +8,7 @@
 // 3. 所有WDL统一换算成"分析发起时那一方"的胜率百分比，这样5步下来能连成一条有意义的趋势，
 //    不会因为红黑轮流走棋、每步视角切换而看起来忽上忽下
 
-import {
-  applyMove,
-  boardToFen,
-  getPieceLabel,
-  moveToChineseNotation,
-  opponentOf,
-  positionToUcciSquare,
-  ucciCoordToMove
-} from '@shared/chess'
+import { applyMove, boardToFen, moveToChineseNotation, opponentOf, ucciCoordToMove } from '@shared/chess'
 import type { Board, Side } from '@shared/chess'
 import { buildMoveFeatureDiff, type ThreatInfo } from '@shared/chess'
 import type { EngineAnalysisResult, EngineWdl } from '@shared/engine'
@@ -30,6 +22,8 @@ export interface SingleAnalysisStep {
   stepNumber: number
   moveNotation: string
   moveCoord: string
+  /** 走出这一步的那一方，用来把「红-黑子力差」翻成走子方吃没吃子 */
+  moverSide: Side
   winRateBeforePercent: number
   winRateAfterPercent: number
   /** 子力差/机动性差固定是"红方-黑方"，和阶段7 features.ts的口径一致，不随视角变化 */
@@ -39,7 +33,6 @@ export interface SingleAnalysisStep {
   mobilityDiffAfter: number
   threats: ThreatInfo[]
   isDiscoveredThreat: boolean
-  note: string
 }
 
 export interface SingleAnalysisResult {
@@ -54,21 +47,32 @@ export interface SingleAnalysisResult {
 export const DEFAULT_PV_STEPS = 5
 export const DEFAULT_STEP_DEPTH = 12
 
+/** 鼠标悬停胜率数字时展示给用户看的计算公式说明 */
+export const WIN_RATE_FORMULA_HINT =
+  '胜率 = 胜 ÷ (胜 + 负)。和棋不参与计算。括号里的胜/和/负仍是引擎千分制（三项合计 1000）。'
+
 /**
- * 引擎返回的WDL默认是"这个局面里轮到走棋的那一方"的视角；换算成固定视角(perspective)下的
- * 胜率百分比（0-100，保留1位小数），供UI画出一条前后连贯、不随红黑轮转而跳变的趋势。
+ * 把引擎返回的「当前走棋方」WDL，换成指定视角下的 [胜, 和, 负]。
+ * 视角相反时只需对调胜和负，和棋不变。
  */
-export function winRatePercentFromPerspective(wdl: EngineWdl, wdlSide: Side, perspective: Side): number {
-  const [win, , loss] = wdl
-  const raw = wdlSide === perspective ? win : loss
-  return raw / 10 // 千分制(0-1000)直接除以10就是百分比(0-100)
+export function wdlFromPerspective(wdl: EngineWdl, wdlSide: Side, perspective: Side): EngineWdl {
+  return wdlSide === perspective ? wdl : [wdl[2], wdl[1], wdl[0]]
 }
 
-/** 把一条威胁信息组织成"车威胁黑马(e9)"这样的人话描述，供UI直接展示 */
-export function describeThreat(threat: ThreatInfo): string {
-  const attackerLabel = getPieceLabel(threat.attacker.piece)
-  const targetLabel = getPieceLabel(threat.target.piece)
-  return `${attackerLabel}威胁${targetLabel}(${positionToUcciSquare(threat.target.pos)})`
+/** 排除和棋后的胜率百分比：胜 / (胜 + 负)，保留 1 位小数；全是和棋时记 50%。 */
+export function decisiveWinRatePercent(win: number, loss: number): number {
+  const decisive = win + loss
+  if (decisive <= 0) return 50
+  return Math.round((win / decisive) * 1000) / 10
+}
+
+/**
+ * 引擎返回的WDL默认是"这个局面里轮到走棋的那一方"的视角；换算成固定视角(perspective)下、
+ * 排除和棋后的胜率百分比（0-100，保留1位小数）。
+ */
+export function winRatePercentFromPerspective(wdl: EngineWdl, wdlSide: Side, perspective: Side): number {
+  const [win, , loss] = wdlFromPerspective(wdl, wdlSide, perspective)
+  return decisiveWinRatePercent(win, loss)
 }
 
 export interface RunSingleAnalysisOptions {
@@ -114,6 +118,7 @@ export async function runSinglePositionAnalysis(
       stepNumber: i + 1,
       moveNotation,
       moveCoord: pvMoves[i],
+      moverSide: currentSide,
       winRateBeforePercent: winRateBefore,
       winRateAfterPercent: winRateAfter,
       materialDiffBefore: featureDiff.materialDiffBefore,
@@ -121,8 +126,7 @@ export async function runSinglePositionAnalysis(
       mobilityDiffBefore: featureDiff.mobilityDiffBefore,
       mobilityDiffAfter: featureDiff.mobilityDiffAfter,
       threats: featureDiff.threatsAfter,
-      isDiscoveredThreat: featureDiff.discoveredThreats.length > 0,
-      note: PIN_DETECTION_DISCLAIMER
+      isDiscoveredThreat: featureDiff.discoveredThreats.length > 0
     })
 
     currentBoard = nextBoard

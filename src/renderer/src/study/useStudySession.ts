@@ -24,7 +24,7 @@ import {
 } from '@shared/chess'
 import type { Board, Piece, Position, Side } from '@shared/chess'
 import type { MoveNode } from '@shared/moveTree'
-import { computePathFromRoot } from './moveTreeUtils'
+import { collectSubtreeIds, computePathFromRoot, nextForwardNodeId } from './moveTreeUtils'
 
 export interface StudySubjectRef {
   kind: 'opening' | 'case'
@@ -75,8 +75,7 @@ export interface UseStudySessionResult {
   goBack: () => void
   goForward: () => void
   jumpToNode: (nodeId: string) => void
-  prepareBranchFrom: (nodeId: string) => void
-  pendingBranchFromId: string | null
+  deleteNode: (nodeId: string) => Promise<void>
 
   // 走子
   handleSquareClick: (pos: Position) => void
@@ -109,7 +108,6 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
   const [cursorIndex, setCursorIndex] = useState(0)
   const [sandbox, setSandbox] = useState<SandboxState | null>(null)
   const [selection, setSelection] = useState<SelectionState>(NO_SELECTION)
-  const [pendingBranchFromId, setPendingBranchFromId] = useState<string | null>(null)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
 
   useEffect(() => {
@@ -152,7 +150,6 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
         setCursorIndex(0)
         setSandbox(null)
         setSelection(NO_SELECTION)
-        setPendingBranchFromId(null)
         setLoading(false)
       } catch (err) {
         if (cancelled) return
@@ -209,7 +206,6 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
     }
 
     setSelection(NO_SELECTION)
-    setPendingBranchFromId(null)
 
     const notation = moveToChineseNotation(board, move)
     const nextBoard = applyMove(board, move)
@@ -261,7 +257,14 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
 
   function goForward(): void {
     if (sandbox) return
-    setCursorIndex((prev) => Math.min(activePath.length - 1, prev + 1))
+    const nextId = nextForwardNodeId(nodes, activePath, cursorIndex)
+    if (!nextId) return
+    if (cursorIndex < activePath.length - 1) {
+      setCursorIndex((prev) => prev + 1)
+    } else {
+      setActivePath((prev) => [...prev, nextId])
+      setCursorIndex((prev) => prev + 1)
+    }
     setSelection(NO_SELECTION)
   }
 
@@ -272,12 +275,32 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
     setActivePath(path)
     setCursorIndex(path.length - 1)
     setSelection(NO_SELECTION)
-    setPendingBranchFromId(null)
   }
 
-  function prepareBranchFrom(nodeId: string): void {
-    jumpToNode(nodeId)
-    setPendingBranchFromId(nodeId)
+  async function deleteNode(nodeId: string): Promise<void> {
+    const target = nodes.get(nodeId)
+    if (!target || target.parentId === null) return
+
+    await window.chessoc.moveTree.deleteMoveNode(nodeId)
+
+    const removedIds = new Set(collectSubtreeIds(nodes, nodeId))
+    const parentId = target.parentId
+    const nextNodes = new Map(nodes)
+    for (const id of removedIds) nextNodes.delete(id)
+    const parent = nextNodes.get(parentId)
+    if (parent) {
+      nextNodes.set(parentId, {
+        ...parent,
+        childrenIds: parent.childrenIds.filter((id) => id !== nodeId)
+      })
+    }
+    setNodes(nextNodes)
+
+    const fallbackId = currentNodeId && removedIds.has(currentNodeId) ? parentId : (currentNodeId ?? parentId)
+    const path = computePathFromRoot(nextNodes, fallbackId ?? parentId)
+    setActivePath(path)
+    setCursorIndex(Math.max(0, path.length - 1))
+    setSelection(NO_SELECTION)
   }
 
   function toggleSandbox(): void {
@@ -351,12 +374,11 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
     cursorIndex,
     currentNodeId,
     canGoBack: !sandbox && cursorIndex > 0,
-    canGoForward: !sandbox && cursorIndex < activePath.length - 1,
+    canGoForward: !sandbox && nextForwardNodeId(nodes, activePath, cursorIndex) !== null,
     goBack,
     goForward,
     jumpToNode,
-    prepareBranchFrom,
-    pendingBranchFromId,
+    deleteNode,
 
     handleSquareClick,
 
