@@ -18,11 +18,15 @@ Openings are grouped by the first piece you play: Cannon, Horse, Chariot, Elepha
 
 The board is on the left, a glowing move tree on the right. Legal moves only. Each move becomes a node; click a node to jump there. Right-click to add a variation or a note. Turn on **Sandbox** to try ideas — turning it off restores the position you started from.
 
+**AI analysis** in the toolbar sends the board as it stands to the engine — no need to set the position up again. It opens on the right as a second tab next to the move tree, so you can switch back and forth. Works for opening lines and for midgame / endgame / full-game cases alike.
+
 ![Study board](pics/中炮对屏风马.png)
 
 ### Midgame / endgame / full games
 
 A case library with folders and search. Midgames and endgames start from an empty board: place pieces, then hit **Start recording**. A full game starts from the standard initial position.
+
+You can hit **Save** halfway through placing pieces and walk away — reopen the case and it is still in setup mode with your pieces where you left them. To change the starting position of a case you already started recording, use **Redo setup** under the board (moves recorded from the old starting position are cleared, with a confirmation first).
 
 ![Case library](pics/案例库.png)
 
@@ -30,7 +34,8 @@ A case library with folders and search. Midgames and endgames start from an empt
 
 Analysis uses the open-source [Pikafish](https://github.com/official-pikafish/Pikafish) engine.
 
-- **Single position**: set up a board and see the next few moves, win rate, captures, and threats.
+- **One click, from a study**: analyse the board you are already looking at — see **Study** above.
+- **Single position**: set up a board from scratch and see the next few moves, win rate, captures, and threats.
 - **Full game**: pick Red or Black, play from the start, and watch a win-rate chart. You can run a single-position analysis on any move, or save the line so far into the full-game library.
 
 ![Full-game analysis](pics/ai分析.png)
@@ -39,16 +44,36 @@ Analysis uses the open-source [Pikafish](https://github.com/official-pikafish/Pi
 
 ## Download
 
-No Node.js required. Go to [Releases](https://github.com/promisingZBW/TtzChess/releases) and grab one of:
+No Node.js required. Two mirrors, same contents — use Gitee from mainland China, GitHub elsewhere:
+
+| Where | Best for |
+| --- | --- |
+| [GitHub Releases](https://github.com/promisingZBW/TtzChess/releases) | Everywhere outside mainland China |
+| [Gitee releases](https://gitee.com/promisingzbw/ttz-chess/releases) | Mainland China — direct, no VPN needed |
+
+Both carry the same two files:
 
 | File | What it is |
 | --- | --- |
 | `TtzChess-*-setup.exe` | Installer, Start Menu + desktop shortcut |
 | `TtzChess-*-win.zip` | Portable — unzip and run `TtzChess.exe` |
 
-The engine is bundled. After install you can click **Start analysis** right away.
+The Pikafish engine is bundled. After install you can click **Start analysis** right away.
+
+See [CHANGELOG.md](CHANGELOG.md) for what changed in each release.
 
 Game data lives in a `data` folder next to the app. To move machines, quit TtzChess and copy that folder over.
+
+### Slow or failing downloads from mainland China
+
+Use the Gitee mirror above — same version, same files, hosted inside China.
+
+The reason GitHub struggles: release assets are not served from `github.com` but from
+`objects.githubusercontent.com`, which is frequently unreachable or throttled to a few tens of KB/s
+inside mainland China, so a 100 MB+ installer often dies halfway. The repo source is only ~8 MB, so
+`git clone` usually works; it is the installer that breaks. If you would rather stay on GitHub: try a
+different network or a VPN, use a resumable downloader such as [aria2](https://aria2.github.io/), or
+put a community GitHub proxy prefix in front of the download URL.
 
 ## Run from source
 

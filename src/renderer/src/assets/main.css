@@ -1603,3 +1603,157 @@ select {
   fill: var(--accent-cinnabar-bright);
   stroke: #5c130f;
 }
+
+
+/* ---------- 打谱页右侧："棋谱树 / AI分析"两个标签页轮流占用同一块地方 ---------- */
+/* 窗口宽度就这么多，横着再加一列分析结果棋盘就没地方了，所以点AI分析时直接把棋谱树盖住，
+   顶上留一排标签随时切回去——和浏览器切标签页是一个意思。 */
+
+.study-right-column {
+  flex: 1;
+  min-width: 280px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.study-pane-tabs {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-bronze);
+}
+
+.study-pane-tab {
+  padding: 6px 16px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  /* 标签条底下那条线是 .study-pane-tabs 画的；选中的标签要把自己底下那一段"擦掉"，
+     做出标签和内容连成一片的效果，所以往下挪一像素盖住它 */
+  margin-bottom: -1px;
+}
+
+.study-pane-tab:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.study-pane-tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.study-pane-tab-active {
+  border-color: var(--border-bronze);
+  border-bottom: 1px solid var(--bg-deep);
+  background: var(--bg-panel);
+  color: var(--accent-gold-bright);
+}
+
+/* ---------- 打谱页里的AI分析面板 ---------- */
+
+.analysis-toggle-active {
+  background: rgba(113, 177, 131, 0.22) !important;
+  border-color: var(--accent-jade) !important;
+  color: var(--accent-jade-bright) !important;
+}
+
+.board-analysis-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-bronze);
+  border-radius: var(--radius-lg);
+  background: var(--bg-inset);
+  overflow: hidden;
+}
+
+.board-analysis-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.board-analysis-subject {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.board-analysis-sandbox-tag {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent-gold);
+  background: rgba(201, 161, 90, 0.18);
+  color: var(--accent-gold-bright);
+  font-size: 12px;
+}
+
+.board-analysis-header-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.board-analysis-header-actions button {
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-bronze);
+  background: var(--bg-panel-hover);
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.board-analysis-header-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.board-analysis-close {
+  padding: 5px 10px !important;
+  font-size: 15px !important;
+  line-height: 1;
+}
+
+.board-analysis-stale {
+  flex-shrink: 0;
+  color: var(--accent-gold-bright);
+  opacity: 1;
+}
+
+/* 结果列表自己滚，面板顶上那行按钮不跟着滚走 */
+.board-analysis-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ---------- 案例的"重新摆局"：和摆局阶段的"开始打谱"占同一个位置，互为反向操作 ---------- */
+
+.restart-placement-button {
+  flex-shrink: 0;
+  padding: 6px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-bronze);
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.restart-placement-button:hover {
+  border-color: var(--border-bronze-strong);
+  color: var(--text-primary);
+}

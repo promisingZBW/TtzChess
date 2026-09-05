@@ -28,6 +28,8 @@ const api: ChessOCBridge = {
     listStudyCases: () => ipcRenderer.invoke(MOVE_TREE_CHANNELS.listStudyCases),
     getStudyCase: (id: string) => ipcRenderer.invoke(MOVE_TREE_CHANNELS.getStudyCase, id),
     touchStudyCase: (id: string) => ipcRenderer.invoke(MOVE_TREE_CHANNELS.touchStudyCase, id),
+    saveStudyCaseSetup: (id: string, boardStateFEN: string | null, setupCompleted: boolean) =>
+      ipcRenderer.invoke(MOVE_TREE_CHANNELS.saveStudyCaseSetup, id, boardStateFEN, setupCompleted),
 
     loadTree: (rootNodeId: string) => ipcRenderer.invoke(MOVE_TREE_CHANNELS.loadTree, rootNodeId),
     createMoveNode: (input: CreateMoveNodeRequest) =>

@@ -44,6 +44,14 @@ export interface StudyCase {
   title: string
   folderId: string | null
   rootNode: MoveNode
+  /**
+   * 摆局阶段有没有结束。false=还在往空棋盘上摆子，打开案例进摆局界面；true=已经在打谱阶段。
+   * 整局案例从标准开局起手，创建出来就是true。
+   *
+   * 单看根节点局面是判断不出来的：摆局摆到一半点保存，局面同样会被写进根节点，
+   * 但那时候摆局还没结束，下次打开必须回到摆局界面接着摆。
+   */
+  setupCompleted: boolean
   createdAt: number
   updatedAt: number
 }

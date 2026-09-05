@@ -45,7 +45,8 @@ CREATE TABLE IF NOT EXISTS study_cases (
   folder_id TEXT REFERENCES folders(id) ON DELETE SET NULL,
   root_node_id TEXT NOT NULL REFERENCES move_nodes(id) ON DELETE CASCADE,
   created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
+  updated_at INTEGER NOT NULL,
+  setup_completed INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_study_cases_folder_id ON study_cases (folder_id);

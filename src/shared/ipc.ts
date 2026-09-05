@@ -58,6 +58,7 @@ export const MOVE_TREE_CHANNELS = {
   listStudyCases: 'moveTree:listStudyCases',
   getStudyCase: 'moveTree:getStudyCase',
   touchStudyCase: 'moveTree:touchStudyCase',
+  saveStudyCaseSetup: 'moveTree:saveStudyCaseSetup',
   loadTree: 'moveTree:loadTree',
   createMoveNode: 'moveTree:createMoveNode',
   deleteMoveNode: 'moveTree:deleteMoveNode',
@@ -96,6 +97,16 @@ export interface MoveTreeBridge {
   listStudyCases(): Promise<StudyCase[]>
   getStudyCase(id: string): Promise<StudyCase | null>
   touchStudyCase(id: string): Promise<void>
+  /**
+   * 保存中局/残局案例的摆局成果。
+   * @param boardStateFEN 摆好的局面；传null表示局面不动，只改阶段标记（"重新摆局"用）
+   * @param setupCompleted false=摆局还没结束，下次打开仍回摆局界面；true=进入打谱阶段
+   */
+  saveStudyCaseSetup(
+    id: string,
+    boardStateFEN: string | null,
+    setupCompleted: boolean
+  ): Promise<StudyCase | null>
 
   /** 从某个根节点开始，把整棵子树都读回来（数组形式，renderer拿到后自己拼成 id->MoveNode 的Map） */
   loadTree(rootNodeId: string): Promise<MoveNode[]>

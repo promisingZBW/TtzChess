@@ -41,6 +41,11 @@ export function registerMoveTreeIpc(db: ChessDatabase): void {
   ipcMain.handle(MOVE_TREE_CHANNELS.touchStudyCase, (_event, id: string) => {
     db.studyCases.touchUpdatedAt(id)
   })
+  ipcMain.handle(
+    MOVE_TREE_CHANNELS.saveStudyCaseSetup,
+    (_event, id: string, boardStateFEN: string | null, setupCompleted: boolean) =>
+      db.studyCases.saveSetup(id, boardStateFEN, setupCompleted)
+  )
 
   ipcMain.handle(MOVE_TREE_CHANNELS.loadTree, (_event, rootNodeId: string) =>
     Array.from(db.moveNodes.loadSubtree(rootNodeId).values())

@@ -1,7 +1,7 @@
 {
   "name": "ttzchess",
   "productName": "TtzChess",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "象棋打谱与AI分析桌面应用",
   "private": true,
   "type": "module",
@@ -46,22 +46,25 @@
     "appId": "com.ttzchess.app",
     "productName": "TtzChess",
     "asar": true,
+    "compression": "maximum",
     "directories": {
       "output": "release/${version}"
     },
     "files": [
-      "out/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "resources/engines/pikafish",
-        "to": "engines/pikafish"
-      }
+      "out/**/*",
+      "!node_modules/**/*"
     ],
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] },
         { "target": "zip", "arch": ["x64"] }
+      ],
+      "extraResources": [
+        {
+          "from": "resources/engines/pikafish",
+          "to": "engines/pikafish",
+          "filter": ["**/*", "!Linux/**", "!MacOS/**"]
+        }
       ],
       "artifactName": "${productName}-${version}-${os}.${ext}"
     },

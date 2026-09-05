@@ -36,6 +36,8 @@ interface LoadedSubject {
   id: string
   title: string
   rootNodeId: string
+  /** 开局棋路没有摆局阶段，恒为true；中局/残局案例读数据库里的标记 */
+  setupCompleted: boolean
 }
 
 type SessionMode = 'placing' | 'recording'
@@ -95,6 +97,12 @@ export interface UseStudySessionResult {
   placePiece: (pos: Position, piece: Piece) => void
   removePlacedPiece: (pos: Position) => void
   startRecording: () => Promise<void>
+
+  // 回到摆局阶段改起始局面（只有案例有摆局阶段，开局棋路用不到）
+  canRestartPlacement: boolean
+  /** 重新摆局会不会牵连已经记好的走法：根节点底下还挂着走法时为true，UI要先二次确认 */
+  restartPlacementDropsMoves: boolean
+  restartPlacement: () => Promise<void>
 }
 
 export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionResult {
@@ -121,11 +129,23 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
         if (subjectRef.kind === 'opening') {
           const study = await window.chessoc.moveTree.getOpeningStudy(subjectRef.id)
           if (!study) throw new Error('找不到这条开局棋路，可能已被删除。')
-          loaded = { kind: 'opening', id: study.id, title: study.title, rootNodeId: study.rootNode.id }
+          loaded = {
+            kind: 'opening',
+            id: study.id,
+            title: study.title,
+            rootNodeId: study.rootNode.id,
+            setupCompleted: true
+          }
         } else {
           const studyCase = await window.chessoc.moveTree.getStudyCase(subjectRef.id)
           if (!studyCase) throw new Error('找不到这个案例，可能已被删除。')
-          loaded = { kind: 'case', id: studyCase.id, title: studyCase.title, rootNodeId: studyCase.rootNode.id }
+          loaded = {
+            kind: 'case',
+            id: studyCase.id,
+            title: studyCase.title,
+            rootNodeId: studyCase.rootNode.id,
+            setupCompleted: studyCase.setupCompleted
+          }
         }
 
         const treeNodes = await window.chessoc.moveTree.loadTree(loaded.rootNodeId)
@@ -133,19 +153,19 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
 
         const map = new Map(treeNodes.map((n) => [n.id, n] as const))
         const rootNode = map.get(loaded.rootNodeId)
-        // 案例的根节点还是初始的空白棋盘、且还没有任何走法时，说明摆局阶段还没结束
-        const initialMode: SessionMode =
-          loaded.kind === 'case' &&
-          rootNode &&
-          rootNode.boardStateFEN === EMPTY_BOARD_FEN &&
-          rootNode.childrenIds.length === 0
-            ? 'placing'
-            : 'recording'
+        // 摆局有没有结束由数据库里的标记说了算，不再从根节点局面反推——摆到一半点保存时，
+        // 摆好的子同样会写进根节点，只靠局面判断会把这种情况误判成"摆局已经结束"。
+        const initialMode: SessionMode = loaded.setupCompleted ? 'recording' : 'placing'
 
         setSubject(loaded)
         setNodes(map)
         setMode(initialMode)
-        setPlacingBoard(createEmptyBoard())
+        // 上次摆到一半保存过就接着上次摆，没存过就是一张空棋盘
+        setPlacingBoard(
+          initialMode === 'placing' && rootNode && rootNode.boardStateFEN !== EMPTY_BOARD_FEN
+            ? parseFen(rootNode.boardStateFEN).board
+            : createEmptyBoard()
+        )
         setActivePath([loaded.rootNodeId])
         setCursorIndex(0)
         setSandbox(null)
@@ -166,6 +186,7 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
 
   const currentNodeId = activePath.length > 0 ? activePath[cursorIndex] : null
   const currentNode = currentNodeId ? (nodes.get(currentNodeId) ?? null) : null
+  const rootChildCount = subject ? (nodes.get(subject.rootNodeId)?.childrenIds.length ?? 0) : 0
 
   const board = useMemo<Board>(() => {
     if (mode === 'placing') return placingBoard
@@ -325,11 +346,28 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
     })
   }
 
+  /** 把根节点的新局面同步进本地缓存，省得为了一个字段重新拉一次整棵树 */
+  function patchRootBoardState(rootNodeId: string, fen: string): void {
+    setNodes((prev) => {
+      const root = prev.get(rootNodeId)
+      if (!root) return prev
+      const next = new Map(prev)
+      next.set(rootNodeId, { ...root, boardStateFEN: fen })
+      return next
+    })
+  }
+
   async function save(): Promise<void> {
     if (!subject) return
     setSaveStatus('saving')
     if (subject.kind === 'opening') {
       await window.chessoc.moveTree.touchOpeningStudy(subject.id)
+    } else if (mode === 'placing') {
+      // 摆局阶段的"保存"必须把摆好的子真的写进根节点。以前这里只更新了时间戳，
+      // 摆好的局面只活在 placingBoard 这个React state里，关掉程序就没了。
+      const fen = boardToFen(placingBoard, 'red')
+      await window.chessoc.moveTree.saveStudyCaseSetup(subject.id, fen, false)
+      patchRootBoardState(subject.rootNodeId, fen)
     } else {
       await window.chessoc.moveTree.touchStudyCase(subject.id)
     }
@@ -348,14 +386,40 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
   async function startRecording(): Promise<void> {
     if (!subject || mode !== 'placing') return
     const fen = boardToFen(placingBoard, 'red')
-    const updated = await window.chessoc.moveTree.updateBoardState(subject.rootNodeId, fen)
+    const updated = await window.chessoc.moveTree.saveStudyCaseSetup(subject.id, fen, true)
     if (!updated) return
-    setNodes((prev) => {
-      const next = new Map(prev)
-      next.set(updated.id, updated)
-      return next
-    })
+    setSubject({ ...subject, setupCompleted: true })
+    patchRootBoardState(subject.rootNodeId, fen)
+    setActivePath([subject.rootNodeId])
+    setCursorIndex(0)
+    setSelection(NO_SELECTION)
     setMode('recording')
+  }
+
+  /**
+   * 回到摆局阶段修改起始局面。已经记好的走法是在旧起始局面上一步步推出来的，换了起始局面
+   * 就全对不上号了（那些节点存的FEN还是旧局面推出来的），所以这里连带把根节点底下的走法一起删掉。
+   * UI 侧要先用 restartPlacementDropsMoves 判断需不需要二次确认，别让用户在不知情的情况下丢棋谱。
+   */
+  async function restartPlacement(): Promise<void> {
+    if (!subject || subject.kind !== 'case' || mode !== 'recording') return
+
+    const root = nodes.get(subject.rootNodeId)
+    if (!root) return
+
+    for (const childId of root.childrenIds) {
+      await window.chessoc.moveTree.deleteMoveNode(childId)
+    }
+    await window.chessoc.moveTree.saveStudyCaseSetup(subject.id, null, false)
+
+    setPlacingBoard(parseFen(root.boardStateFEN).board)
+    setNodes(new Map([[root.id, { ...root, childrenIds: [] }]]))
+    setSubject({ ...subject, setupCompleted: false })
+    setActivePath([subject.rootNodeId])
+    setCursorIndex(0)
+    setSandbox(null)
+    setSelection(NO_SELECTION)
+    setMode('placing')
   }
 
   return {
@@ -392,6 +456,10 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
 
     placePiece,
     removePlacedPiece,
-    startRecording
+    startRecording,
+
+    canRestartPlacement: subject?.kind === 'case' && mode === 'recording' && sandbox === null,
+    restartPlacementDropsMoves: rootChildCount > 0,
+    restartPlacement
   }
 }

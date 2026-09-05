@@ -14,6 +14,7 @@ interface StudyCaseRow {
   root_node_id: string
   created_at: number
   updated_at: number
+  setup_completed: number
 }
 
 export interface CreateStudyCaseInput {
@@ -39,6 +40,7 @@ export class StudyCaseRepository {
       title: row.title,
       folderId: row.folder_id,
       rootNode,
+      setupCompleted: row.setup_completed === 1,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     }
@@ -54,13 +56,24 @@ export class StudyCaseRepository {
     const id = randomUUID()
     const now = Date.now()
     const folderId = input.folderId ?? null
+    // 整局从标准开局起手，没有摆局阶段；中局/残局要先在空棋盘上摆子
+    const setupCompleted = input.type === 'fullgame'
     this.db
       .prepare(
-        `INSERT INTO study_cases (id, type, title, folder_id, root_node_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO study_cases (id, type, title, folder_id, root_node_id, created_at, updated_at, setup_completed)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(id, input.type, input.title, folderId, rootNode.id, now, now)
-    return { id, type: input.type, title: input.title, folderId, rootNode, createdAt: now, updatedAt: now }
+      .run(id, input.type, input.title, folderId, rootNode.id, now, now, setupCompleted ? 1 : 0)
+    return {
+      id,
+      type: input.type,
+      title: input.title,
+      folderId,
+      rootNode,
+      setupCompleted,
+      createdAt: now,
+      updatedAt: now
+    }
   }
 
   getById(id: string): StudyCase | null {
@@ -109,6 +122,23 @@ export class StudyCaseRepository {
     this.db
       .prepare('UPDATE study_cases SET folder_id = ?, updated_at = ? WHERE id = ?')
       .run(folderId, Date.now(), id)
+    return this.getById(id)
+  }
+
+  /**
+   * 保存摆局阶段的成果。boardStateFEN传null表示"只改阶段标记、局面不动"（重新摆局时用）。
+   * 摆到一半点保存 -> setupCompleted传false，局面存下来但下次打开仍回摆局界面；
+   * 点"开始打谱" -> 传true，从此进入打谱阶段。
+   */
+  saveSetup(id: string, boardStateFEN: string | null, setupCompleted: boolean): StudyCase | null {
+    const existing = this.getById(id)
+    if (!existing) return null
+    if (boardStateFEN !== null) {
+      this.moveNodes.updateBoardState(existing.rootNode.id, boardStateFEN)
+    }
+    this.db
+      .prepare('UPDATE study_cases SET setup_completed = ?, updated_at = ? WHERE id = ?')
+      .run(setupCompleted ? 1 : 0, Date.now(), id)
     return this.getById(id)
   }
 

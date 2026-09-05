@@ -17,7 +17,7 @@ import type {
   CreateOpeningStudyRequest,
   CreateStudyCaseRequest
 } from '@shared/ipc'
-import { STANDARD_START_FEN } from '@shared/chess'
+import { EMPTY_BOARD_FEN, STANDARD_START_FEN } from '@shared/chess'
 import type { Folder, MoveNode, OpeningPieceType, OpeningRoot, OpeningStudy, StudyCase } from '@shared/moveTree'
 import { initialFenForStudyCase } from '@shared/moveTree'
 import type { EngineStatus } from '@shared/engine'
@@ -36,7 +36,7 @@ const CENTER_LABELS: Record<OpeningPieceType, string> = {
 interface FallbackDbShape {
   moveNodes: Record<string, MoveNode>
   openingStudies: Record<string, { id: string; pieceType: OpeningStudy['pieceType']; title: string; rootNodeId: string; createdAt: number; updatedAt: number }>
-  studyCases: Record<string, { id: string; type: StudyCase['type']; title: string; folderId: string | null; rootNodeId: string; createdAt: number; updatedAt: number }>
+  studyCases: Record<string, { id: string; type: StudyCase['type']; title: string; folderId: string | null; rootNodeId: string; setupCompleted?: boolean; createdAt: number; updatedAt: number }>
   folders: Record<string, Folder>
 }
 
@@ -78,6 +78,21 @@ function childrenIdsOf(db: FallbackDbShape, nodeId: string): string[] {
 
 function withChildrenIds(db: FallbackDbShape, node: MoveNode): MoveNode {
   return { ...node, childrenIds: childrenIdsOf(db, node.id) }
+}
+
+/**
+ * 把存储行拼成完整的 StudyCase，顺带回填 setupCompleted。
+ * localStorage 里可能还躺着加这个字段之前存下的老数据，回填口径和主进程侧的
+ * migrations.ts 保持一致：整局、或者根节点已经不是空棋盘、或者已经记了走法，都算摆局早就结束了。
+ */
+function toStudyCase(db: FallbackDbShape, row: FallbackDbShape['studyCases'][string]): StudyCase {
+  const rootNode = withChildrenIds(db, db.moveNodes[row.rootNodeId])
+  const setupCompleted =
+    row.setupCompleted ??
+    (row.type === 'fullgame' ||
+      rootNode.boardStateFEN !== EMPTY_BOARD_FEN ||
+      rootNode.childrenIds.length > 0)
+  return { ...row, rootNode, setupCompleted }
 }
 
 function createMoveNode(db: FallbackDbShape, input: CreateMoveNodeRequest | { parentId: null; move: string; moveCoord: string; boardStateFEN: string }): MoveNode {
@@ -156,21 +171,31 @@ export function createBrowserFallbackBridge(): ChessOCBridge {
         const now = Date.now()
         const id = crypto.randomUUID()
         const folderId = input.folderId ?? null
-        db.studyCases[id] = { id, type: input.type, title: input.title, folderId, rootNodeId: rootNode.id, createdAt: now, updatedAt: now }
+        const setupCompleted = input.type === 'fullgame'
+        db.studyCases[id] = {
+          id,
+          type: input.type,
+          title: input.title,
+          folderId,
+          rootNodeId: rootNode.id,
+          setupCompleted,
+          createdAt: now,
+          updatedAt: now
+        }
         saveDb(db)
-        return { id, type: input.type, title: input.title, folderId, rootNode, createdAt: now, updatedAt: now }
+        return { id, type: input.type, title: input.title, folderId, rootNode, setupCompleted, createdAt: now, updatedAt: now }
       },
       async listStudyCases(): Promise<StudyCase[]> {
         const db = loadDb()
         return Object.values(db.studyCases)
           .sort((a, b) => a.createdAt - b.createdAt)
-          .map((row) => ({ ...row, rootNode: withChildrenIds(db, db.moveNodes[row.rootNodeId]) }))
+          .map((row) => toStudyCase(db, row))
       },
       async getStudyCase(id: string): Promise<StudyCase | null> {
         const db = loadDb()
         const row = db.studyCases[id]
         if (!row) return null
-        return { ...row, rootNode: withChildrenIds(db, db.moveNodes[row.rootNodeId]) }
+        return toStudyCase(db, row)
       },
       async touchStudyCase(id: string): Promise<void> {
         const db = loadDb()
@@ -178,6 +203,23 @@ export function createBrowserFallbackBridge(): ChessOCBridge {
         if (!row) return
         row.updatedAt = Date.now()
         saveDb(db)
+      },
+      async saveStudyCaseSetup(
+        id: string,
+        boardStateFEN: string | null,
+        setupCompleted: boolean
+      ): Promise<StudyCase | null> {
+        const db = loadDb()
+        const row = db.studyCases[id]
+        if (!row) return null
+        if (boardStateFEN !== null) {
+          const rootNode = db.moveNodes[row.rootNodeId]
+          if (rootNode) rootNode.boardStateFEN = boardStateFEN
+        }
+        row.setupCompleted = setupCompleted
+        row.updatedAt = Date.now()
+        saveDb(db)
+        return toStudyCase(db, row)
       },
 
       async loadTree(rootNodeId: string): Promise<MoveNode[]> {
@@ -264,7 +306,7 @@ export function createBrowserFallbackBridge(): ChessOCBridge {
         return Object.values(db.studyCases)
           .filter((row) => row.folderId === folderId)
           .sort((a, b) => a.createdAt - b.createdAt)
-          .map((row) => ({ ...row, rootNode: withChildrenIds(db, db.moveNodes[row.rootNodeId]) }))
+          .map((row) => toStudyCase(db, row))
       },
       async searchStudyCases(keyword: string): Promise<StudyCase[]> {
         const db = loadDb()
@@ -272,7 +314,7 @@ export function createBrowserFallbackBridge(): ChessOCBridge {
         return Object.values(db.studyCases)
           .filter((row) => row.title.toLowerCase().includes(lowered))
           .sort((a, b) => a.createdAt - b.createdAt)
-          .map((row) => ({ ...row, rootNode: withChildrenIds(db, db.moveNodes[row.rootNodeId]) }))
+          .map((row) => toStudyCase(db, row))
       },
       async renameStudyCase(id: string, title: string): Promise<StudyCase | null> {
         const db = loadDb()
@@ -281,7 +323,7 @@ export function createBrowserFallbackBridge(): ChessOCBridge {
         row.title = title
         row.updatedAt = Date.now()
         saveDb(db)
-        return { ...row, rootNode: withChildrenIds(db, db.moveNodes[row.rootNodeId]) }
+        return toStudyCase(db, row)
       },
       async moveStudyCaseToFolder(id: string, folderId: string | null): Promise<StudyCase | null> {
         const db = loadDb()
@@ -290,7 +332,7 @@ export function createBrowserFallbackBridge(): ChessOCBridge {
         row.folderId = folderId
         row.updatedAt = Date.now()
         saveDb(db)
-        return { ...row, rootNode: withChildrenIds(db, db.moveNodes[row.rootNodeId]) }
+        return toStudyCase(db, row)
       },
       async deleteStudyCase(id: string): Promise<void> {
         const db = loadDb()

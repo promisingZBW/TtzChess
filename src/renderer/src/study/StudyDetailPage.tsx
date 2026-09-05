@@ -1,8 +1,15 @@
-// 打谱详情界面（dev guide 第5节）：左边棋盘 + 顶部工具栏（返回/保存/沙盘） + 棋盘下方前进后退，
+// 打谱详情界面（dev guide 第5节）：左边棋盘 + 顶部工具栏（返回/保存/AI分析/沙盘） + 棋盘下方前进后退，
 // 右边光球棋谱树面板。摆局阶段（案例专属）额外多一列棋子摆放区和"开始打谱"按钮。
 // 这个文件只负责"组装+布局"，具体状态逻辑都在 useStudySession，交互细节在子组件里。
+//
+// 右侧那一列是"棋谱树"和"AI分析"两个标签页轮流占用的，像浏览器切标签页一样——窗口宽度就这么多，
+// 再横着塞一列分析结果棋盘就没地方放了，所以点AI分析时直接把棋谱树盖住，随时可以切回去。
 
+import { useState } from 'react'
+import { boardToFen } from '@shared/chess'
 import type { Piece, Position } from '@shared/chess'
+import { BoardAnalysisPanel } from '../analysis/BoardAnalysisPanel'
+import { usePositionAnalysis } from '../analysis/usePositionAnalysis'
 import { BoardView } from '../board/BoardView'
 import type { PieceDragPayload } from './dragTypes'
 import { MoveTreePanel } from './MoveTreePanel'
@@ -22,9 +29,18 @@ const SAVE_BUTTON_LABEL: Record<'idle' | 'saving' | 'saved', string> = {
   saved: '已保存 ✓'
 }
 
+type RightPane = 'tree' | 'analysis'
+
 export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): React.JSX.Element {
   const session = useStudySession(subjectRef)
   const keyboard = useKeyboardPlacement(session.mode === 'placing')
+  const analysis = usePositionAnalysis()
+
+  // analysisOpen 决定"AI分析"这个标签页存不存在，rightPane 决定现在显示哪个标签页。
+  // 分开两个状态，是为了让用户切回棋谱树看一眼再切回来时，分析结果还在（不用重新等引擎）。
+  const [analysisOpen, setAnalysisOpen] = useState(false)
+  const [rightPane, setRightPane] = useState<RightPane>('tree')
+  const [confirmRestart, setConfirmRestart] = useState(false)
 
   function handleDropPiece(pos: Position, payload: PieceDragPayload): void {
     if (payload.fromBoard) {
@@ -33,6 +49,26 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
     }
     const piece: Piece = { kind: payload.kind, side: payload.side }
     session.placePiece(pos, piece)
+  }
+
+  function handleAnalyze(): void {
+    setAnalysisOpen(true)
+    setRightPane('analysis')
+    void analysis.analyze(session.board, session.sideToMove)
+  }
+
+  function handleCloseAnalysis(): void {
+    setAnalysisOpen(false)
+    setRightPane('tree')
+    analysis.reset()
+  }
+
+  function handleRestartPlacement(): void {
+    if (session.restartPlacementDropsMoves) {
+      setConfirmRestart(true)
+      return
+    }
+    void session.restartPlacement()
   }
 
   if (session.loading) {
@@ -48,6 +84,11 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
     )
   }
 
+  const hasPieces = session.board.some((row) => row.some((square) => square !== null))
+  const treeAvailable = session.mode === 'recording' && session.rootNodeId !== null
+  const showTreePane = rightPane === 'tree' && treeAvailable
+  const showAnalysisPane = rightPane === 'analysis' && analysisOpen
+
   return (
     <div className="study-detail-page">
       <header className="study-toolbar">
@@ -58,6 +99,14 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
         <div className="study-toolbar-right">
           <button onClick={session.save} disabled={session.saveStatus === 'saving'}>
             {SAVE_BUTTON_LABEL[session.saveStatus]}
+          </button>
+          <button
+            className={showAnalysisPane ? 'analysis-toggle analysis-toggle-active' : 'analysis-toggle'}
+            onClick={handleAnalyze}
+            disabled={!hasPieces || analysis.status === 'loading'}
+            title="用当前棋盘上的局面直接做一次AI分析，不用另外再摆一遍"
+          >
+            {analysis.status === 'loading' ? 'AI 分析中…' : 'AI 分析'}
           </button>
           <button
             className={session.isSandbox ? 'sandbox-toggle sandbox-toggle-active' : 'sandbox-toggle'}
@@ -112,6 +161,16 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
               </button>
             )}
 
+            {session.canRestartPlacement && (
+              <button
+                className="restart-placement-button"
+                onClick={handleRestartPlacement}
+                title="回到摆局界面改这个案例的起始局面"
+              >
+                重新摆局
+              </button>
+            )}
+
             <div className="study-nav-buttons">
               <button onClick={session.goBack} disabled={!session.canGoBack}>
                 ← 后退
@@ -123,18 +182,83 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
           </div>
         </div>
 
-        {session.mode === 'recording' && session.rootNodeId && (
-          <MoveTreePanel
-            nodes={session.nodes}
-            rootNodeId={session.rootNodeId}
-            currentNodeId={session.currentNodeId}
-            activePath={session.activePath}
-            onJumpToNode={session.jumpToNode}
-            onDeleteNode={session.deleteNode}
-            onSetNote={session.setNoteText}
-          />
+        {(showTreePane || showAnalysisPane) && (
+          <div className="study-right-column">
+            {analysisOpen && (
+              <div className="study-pane-tabs" role="tablist">
+                <button
+                  role="tab"
+                  aria-selected={rightPane === 'tree'}
+                  className={rightPane === 'tree' ? 'study-pane-tab study-pane-tab-active' : 'study-pane-tab'}
+                  onClick={() => setRightPane('tree')}
+                  disabled={!treeAvailable}
+                  title={treeAvailable ? undefined : '摆局阶段还没有棋谱树，点"开始打谱"之后才会有'}
+                >
+                  棋谱树
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={rightPane === 'analysis'}
+                  className={
+                    rightPane === 'analysis' ? 'study-pane-tab study-pane-tab-active' : 'study-pane-tab'
+                  }
+                  onClick={() => setRightPane('analysis')}
+                >
+                  AI 分析
+                </button>
+              </div>
+            )}
+
+            {showTreePane && session.rootNodeId && (
+              <MoveTreePanel
+                nodes={session.nodes}
+                rootNodeId={session.rootNodeId}
+                currentNodeId={session.currentNodeId}
+                activePath={session.activePath}
+                onJumpToNode={session.jumpToNode}
+                onDeleteNode={session.deleteNode}
+                onSetNote={session.setNoteText}
+              />
+            )}
+
+            {showAnalysisPane && (
+              <BoardAnalysisPanel
+                analysis={analysis}
+                currentFen={boardToFen(session.board, session.sideToMove)}
+                sideToMove={session.sideToMove}
+                isSandbox={session.isSandbox}
+                onAnalyze={handleAnalyze}
+                onClose={handleCloseAnalysis}
+              />
+            )}
+          </div>
         )}
       </div>
+
+      {confirmRestart && (
+        <>
+          <div className="confirm-dialog-overlay" onClick={() => setConfirmRestart(false)} />
+          <div className="confirm-dialog">
+            <p className="confirm-dialog-message">
+              重新摆局会回到摆局界面，让你改这个案例的起始局面。已经记下来的走法是在旧的起始局面上一步步推出来的，
+              换了起始局面就对不上了，所以会被一起清掉。确定要重新摆局吗？
+            </p>
+            <div className="confirm-dialog-actions">
+              <button onClick={() => setConfirmRestart(false)}>取消</button>
+              <button
+                className="confirm-dialog-danger"
+                onClick={() => {
+                  setConfirmRestart(false)
+                  handleCloseAnalysis()
+                  void session.restartPlacement()
+                }}
+              >
+                确认重新摆局
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
