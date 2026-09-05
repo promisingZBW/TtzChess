@@ -18,9 +18,11 @@
 
 左边是棋盘，右边是光球棋谱树。按象棋规则走子，每一步会变成一个光球；点光球就能跳回那一手。右键可以加分支或写笔记。需要试变化时，打开「沙盘演练」——关掉后棋盘会回到进入前的局面。
 
-工具栏上的「AI 分析」直接拿当前棋盘去问引擎，不用另外再摆一遍局面。结果在右边打开，和棋谱树是两个标签页，随时切回去看棋路。开局棋路和中局／残局／整局案例都能用。
-
 ![中炮对屏风马](pics/中炮对屏风马.png)
+
+工具栏上的「AI 分析」直接拿当前棋盘去问引擎，不用另外再摆一遍局面。结果占用右边那一列，和棋谱树是两个标签页，随时切回去看棋路——开局棋路和中局／残局／整局案例都能用。
+
+![打谱时一键 AI 分析](pics/中炮对屏风马AI.png)
 
 ### 中局 / 残局 / 整局
 
@@ -34,7 +36,7 @@
 
 分析用的是开源引擎 [Pikafish](https://github.com/official-pikafish/Pikafish)。
 
-- **一键分析**：打谱时直接分析当前棋盘，见上面「打谱」一节。
+- **一键分析**：打谱时直接分析当前棋盘，不用重新摆一遍，见上面「打谱」一节的截图。
 - **单次分析**：从空棋盘摆一个局面，看后面几步的胜率、吃子和捉子提示。
 - **整局分析**：选红方或黑方视角，从头走棋，右侧画出胜率折线。任意一步都可以再做一次单次分析，也可以把当前棋路收藏进整局案例库。
 
@@ -44,14 +46,7 @@
 
 ## 下载使用
 
-不需要安装 Node.js。国内用 Gitee，国外用 GitHub，两边内容一样：
-
-| 下载地址 | 适合 |
-| --- | --- |
-| [Gitee 发行版](https://gitee.com/promisingzbw/ttz-chess/releases) | **国内推荐**，直连不用梯子 |
-| [GitHub Releases](https://github.com/promisingZBW/TtzChess/releases) | 国外网络 |
-
-两边都有这两个文件，选一个：
+不需要安装 Node.js。打开 [Releases](https://github.com/promisingZBW/TtzChess/releases)，选一个：
 
 | 文件 | 说明 |
 | --- | --- |
@@ -64,30 +59,30 @@
 
 棋谱数据在程序旁边的 `data` 文件夹。换电脑时关掉软件，把整个 `data` 拷过去覆盖即可。
 
-### GitHub 下载不动 / 打不开怎么办
+### 国内下载不动 / GitHub 打不开
 
-先说结论：**直接去上面的 Gitee 下载**，这是为国内网络准备的，同一个版本同一个文件。
+安装包接近 150 MB，而 Release 里的附件并不放在 `github.com` 上，是从
+`objects.githubusercontent.com` 发出来的——这个域名在国内经常连不上或者限速到几十 KB/s，
+下到一半断掉是常事。仓库源码只有 8 MB 左右，`git clone` 一般没问题，卡住的基本都是安装包。
 
-原因是 GitHub Release 里的附件并不放在 `github.com` 上，而是从 `objects.githubusercontent.com`
-发出来的，这个域名在国内经常连不上或者限速到几十 KB/s，一个 100 MB 以上的安装包下到一半断掉是常事。
-仓库源码本身只有 8 MB 左右，`git clone` 一般没问题，卡住的基本都是安装包。
-
-如果你就是想用 GitHub：
+几个办法，从最省事的开始：
 
 1. **换个网络再试**：手机热点、公司网络、或者挂代理，往往一次就过。用
    [aria2](https://aria2.github.io/) 或者迅雷这类支持断点续传的下载工具，比浏览器扛得住。
-2. **用加速前缀**：把下载地址前面拼一段公共代理域名。这类站点是社区维护的，会换域名也会挂，
+2. **用加速前缀**：把下载地址前面拼一段公共代理域名再下。这类站点是社区维护的，会换域名也会挂，
    用之前先确认还活着（搜「github 加速」能找到当下能用的）。形式大致是：
 
    ```text
    https://<加速域名>/https://github.com/promisingZBW/TtzChess/releases/download/<版本号>/TtzChess-<版本号>-setup.exe
    ```
 
-3. **`git clone` 也卡的话**，克隆 Gitee 那份就行：
+3. **`git clone` 也卡的话**，让 git 自动走加速域名：
 
    ```bash
-   git clone https://gitee.com/promisingzbw/ttz-chess.git
+   git config --global url."https://<加速域名>/https://github.com/".insteadOf "https://github.com/"
    ```
+
+   不想改全局配置就临时用 `git clone https://<加速域名>/https://github.com/promisingZBW/TtzChess.git`。
 
 ## 从源码运行
 

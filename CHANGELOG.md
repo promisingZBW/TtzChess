@@ -14,8 +14,7 @@
 
 ### 打包
 
-- Windows 安装包瘦身：应用代码包从 13.8 MB 降到 2.8 MB（渲染层依赖已经被打包器内联，安装包里那份 `node_modules` 是重复的），Windows 版不再附带 Linux / macOS 的引擎二进制，并开启最高压缩。
-- 新增 [Gitee 镜像](https://gitee.com/promisingzbw/ttz-chess)，安装包同步发一份，国内下载不用再跟 GitHub 较劲。
+- Windows 安装包小幅瘦身（150.5 MB → 148.6 MB）：应用代码包从 13.8 MB 降到 2.8 MB（渲染层依赖已经被打包器内联，安装包里那份 `node_modules` 是重复的），Windows 版不再附带 Linux / macOS 的引擎二进制，并开启最高压缩。真正占体积的是 Electron 运行时和 50 MB 的引擎权重，这两块压不动。
 
 ## 0.1.0
 
