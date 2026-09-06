@@ -65,24 +65,7 @@
 `objects.githubusercontent.com` 发出来的——这个域名在国内经常连不上或者限速到几十 KB/s，
 下到一半断掉是常事。仓库源码只有 8 MB 左右，`git clone` 一般没问题，卡住的基本都是安装包。
 
-几个办法，从最省事的开始：
-
-1. **换个网络再试**：手机热点、公司网络、或者挂代理，往往一次就过。用
-   [aria2](https://aria2.github.io/) 或者迅雷这类支持断点续传的下载工具，比浏览器扛得住。
-2. **用加速前缀**：把下载地址前面拼一段公共代理域名再下。这类站点是社区维护的，会换域名也会挂，
-   用之前先确认还活着（搜「github 加速」能找到当下能用的）。形式大致是：
-
-   ```text
-   https://<加速域名>/https://github.com/promisingZBW/TtzChess/releases/download/<版本号>/TtzChess-<版本号>-setup.exe
-   ```
-
-3. **`git clone` 也卡的话**，让 git 自动走加速域名：
-
-   ```bash
-   git config --global url."https://<加速域名>/https://github.com/".insteadOf "https://github.com/"
-   ```
-
-   不想改全局配置就临时用 `git clone https://<加速域名>/https://github.com/promisingZBW/TtzChess.git`。
+下载失败最好是开个梯子，若还是下载失败，可以b站（爱秃星豚Boren）私信我
 
 ## 从源码运行
 
