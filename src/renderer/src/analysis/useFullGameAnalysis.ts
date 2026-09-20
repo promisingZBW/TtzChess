@@ -7,7 +7,6 @@ import {
   applyMove,
   boardToFen,
   getLegalMovesFrom,
-  isInCheck,
   isLegalMove,
   moveToChineseNotation,
   moveToUcciCoord,
@@ -161,10 +160,7 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
     if (sandbox) {
       const { state, moved } = clickSandboxSquare(sandbox, pos)
       setSandbox(state)
-      if (moved) {
-        const frame = sandboxFrame(state)
-        playMoveSound({ captured: moved.captured, check: isInCheck(frame.board, frame.sideToMove) })
-      }
+      if (moved) playMoveSound()
       return
     }
 

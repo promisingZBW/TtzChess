@@ -1,20 +1,30 @@
-// 落子音效。用 Web Audio 现场合成，不带任何音频文件。
+// 落子音效：播放 src/renderer/src/sounds 下那段实录的棋子声，每走一步响一下。
 //
-// 为什么不用现成的音频素材：一是网上找的象棋音效基本都有版权，打进安装包不合适；
-// 二是三个几十 KB 的 wav 也要进 asar，而合成出来的效果对"木头子敲在木板上"这种
-// 短促的声音已经够用了——本来就是一声闷响，没有旋律可言。
+// 早先这里是用 Web Audio 现场合成的（噪声+低频），听着有电子味，换成实录的了。
 //
-// 合成思路：一段极短的噪声（模拟敲击的那一下摩擦声）+ 一个快速衰减的低频正弦
-// （模拟木头的共鸣），两个加起来就是"嗒"。吃子比落子更响、频率更低一点，听起来更"重"；
-// 将军用两声连击，和前两者区分开。
+// 为什么用 Web Audio 解码播放、而不是简单地 new Audio().play()：
+// HTMLAudioElement 同一个实例没播完就再次 play() 会把前一次掐断，连着快速走子会吞音；
+// 每次新建一个实例又要重新解码这 48KB，还会攒下一堆待回收的元素。
+// 这里只解码一次、把 AudioBuffer 缓存起来，之后每响一次就挂一个新的 BufferSource，
+// 几个音互相叠着放也没问题，延迟也最低。
 //
 // 浏览器/Electron 都不允许页面在用户交互前出声，所以 AudioContext 延迟到第一次
 // 真正要放音（也就是用户点了棋盘之后）才创建，不在模块加载时就建。
 
+import voiceUrl from '../sounds/voice.wav'
+
 const MUTE_STORAGE_KEY = 'ttzchess-sound-muted'
 
 let audioContext: AudioContext | null = null
+let decoded: AudioBuffer | null = null
+let decoding: Promise<AudioBuffer | null> | null = null
 let muted = readMutedFromStorage()
+
+// 音频文件本身不用等 AudioContext，页面一加载就可以先抓回来放着，
+// 这样第一步棋落下时只剩解码，不用再等网络/磁盘
+const rawBytes: Promise<ArrayBuffer | null> = fetch(voiceUrl)
+  .then((res) => (res.ok ? res.arrayBuffer() : null))
+  .catch(() => null)
 
 function readMutedFromStorage(): boolean {
   try {
@@ -39,7 +49,6 @@ export function setSoundMuted(next: boolean): void {
 }
 
 function getContext(): AudioContext | null {
-  if (muted) return null
   if (!audioContext) {
     try {
       audioContext = new AudioContext()
@@ -52,73 +61,33 @@ function getContext(): AudioContext | null {
   return audioContext
 }
 
-/** 一小段白噪声，就是敲击瞬间那下"擦"的声音 */
-function playNoiseBurst(ctx: AudioContext, at: number, durationSec: number, gainValue: number): void {
-  const frameCount = Math.max(1, Math.floor(ctx.sampleRate * durationSec))
-  const buffer = ctx.createBuffer(1, frameCount, ctx.sampleRate)
-  const data = buffer.getChannelData(0)
-  for (let i = 0; i < frameCount; i++) {
-    // 越往后越轻，避免听起来像"嘶"的一声长噪音
-    data[i] = (Math.random() * 2 - 1) * (1 - i / frameCount)
+/** 解码只做一次，之后直接复用同一个 AudioBuffer */
+function loadBuffer(ctx: AudioContext): Promise<AudioBuffer | null> {
+  if (decoded) return Promise.resolve(decoded)
+  if (!decoding) {
+    decoding = rawBytes
+      .then((bytes) => (bytes ? ctx.decodeAudioData(bytes.slice(0)) : null))
+      .then((buffer) => {
+        decoded = buffer
+        return buffer
+      })
+      .catch(() => null)
   }
-
-  const source = ctx.createBufferSource()
-  source.buffer = buffer
-
-  // 掐掉低频和高频，剩下中频，听感就从"沙沙"变成"哒"
-  const bandpass = ctx.createBiquadFilter()
-  bandpass.type = 'bandpass'
-  bandpass.frequency.value = 1800
-  bandpass.Q.value = 0.8
-
-  const gain = ctx.createGain()
-  gain.gain.setValueAtTime(gainValue, at)
-  gain.gain.exponentialRampToValueAtTime(0.0001, at + durationSec)
-
-  source.connect(bandpass).connect(gain).connect(ctx.destination)
-  source.start(at)
-  source.stop(at + durationSec)
+  return decoding
 }
 
-/** 快速衰减的低频，木头被敲出来的那点共鸣 */
-function playThump(ctx: AudioContext, at: number, frequency: number, gainValue: number): void {
-  const osc = ctx.createOscillator()
-  osc.type = 'triangle'
-  osc.frequency.setValueAtTime(frequency, at)
-  // 音高往下掉一点，听起来才像敲实心物体，而不是电子音
-  osc.frequency.exponentialRampToValueAtTime(frequency * 0.6, at + 0.08)
-
-  const gain = ctx.createGain()
-  gain.gain.setValueAtTime(gainValue, at)
-  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.09)
-
-  osc.connect(gain).connect(ctx.destination)
-  osc.start(at)
-  osc.stop(at + 0.1)
-}
-
-function clack(ctx: AudioContext, at: number, frequency: number, volume: number): void {
-  playNoiseBurst(ctx, at, 0.03, 0.18 * volume)
-  playThump(ctx, at, frequency, 0.28 * volume)
-}
-
-/**
- * 走完一步棋之后放音。三种声音：普通落子、吃子（更重）、将军（两声）。
- * 吃子同时将军时按将军处理——将军是更重要的信息。
- */
-export function playMoveSound(options: { captured: boolean; check: boolean }): void {
+/** 走完一步棋就响一下。静音时什么都不做，放音失败也只是没声音，不影响走棋 */
+export function playMoveSound(): void {
+  if (muted) return
   const ctx = getContext()
   if (!ctx) return
-  const now = ctx.currentTime
 
-  if (options.check) {
-    clack(ctx, now, 260, 1)
-    clack(ctx, now + 0.12, 340, 0.9)
-    return
-  }
-  if (options.captured) {
-    clack(ctx, now, 190, 1.15)
-    return
-  }
-  clack(ctx, now, 260, 0.85)
+  void loadBuffer(ctx).then((buffer) => {
+    // 解码是异步的，等回来的时候用户可能已经点了静音
+    if (!buffer || muted || !audioContext) return
+    const source = audioContext.createBufferSource()
+    source.buffer = buffer
+    source.connect(audioContext.destination)
+    source.start()
+  })
 }

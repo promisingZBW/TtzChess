@@ -4,7 +4,7 @@
 // 沙盘演练可以在当前局面上试走，关掉后回到进入前的摆局，不会改掉待分析的正式局面。
 
 import { useState } from 'react'
-import { createEmptyBoard, isInCheck, setSquare } from '@shared/chess'
+import { createEmptyBoard, setSquare } from '@shared/chess'
 import type { Board, Piece, Position, Side } from '@shared/chess'
 import { BoardView } from '../board/BoardView'
 import type { PieceDragPayload } from '../study/dragTypes'
@@ -99,10 +99,7 @@ export function SinglePositionAnalysisPage({ onBack }: SinglePositionAnalysisPag
     if (!sandbox) return
     const { state, moved } = clickSandboxSquare(sandbox, pos)
     setSandbox(state)
-    if (moved) {
-      const frame = sandboxFrame(state)
-      playMoveSound({ captured: moved.captured, check: isInCheck(frame.board, frame.sideToMove) })
-    }
+    if (moved) playMoveSound()
   }
 
   async function handleStartAnalysis(): Promise<void> {

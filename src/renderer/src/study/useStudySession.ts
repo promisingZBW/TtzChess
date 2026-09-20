@@ -14,7 +14,6 @@ import {
   createEmptyBoard,
   EMPTY_BOARD_FEN,
   getLegalMovesFrom,
-  isInCheck,
   isLegalMove,
   moveToChineseNotation,
   moveToUcciCoord,
@@ -240,11 +239,10 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
     setSelection(NO_SELECTION)
 
     const notation = moveToChineseNotation(board, move)
-    const captured = board[pos.row][pos.col] !== null
     const nextBoard = applyMove(board, move)
     const nextSide = opponentOf(sideToMove)
     const nextFEN = boardToFen(nextBoard, nextSide)
-    playMoveSound({ captured, check: isInCheck(nextBoard, nextSide) })
+    playMoveSound()
 
     if (sandbox) {
       // 沙盘模式：只往沙盘自己的历史里追加，不产生任何持久化写入。
