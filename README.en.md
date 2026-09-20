@@ -10,19 +10,29 @@ Three items on the left sidebar cover everything.
 
 ### Opening map
 
-Openings are grouped by the first piece you play: Cannon, Horse, Chariot, Elephant, Pawn. Click a center piece to start a new line. Click a small ball to open an existing one and keep recording.
+Openings are grouped by the first piece you play: Cannon, Horse, Chariot, Elephant, Pawn. The row of buttons switches between them and one map gets the whole screen, so even long names have room.
+
+Click the center piece to start a new line. Click a small ball to open an existing one and keep recording.
 
 ![Opening map](pics/开局径向图.png)
 
 ### Recording a game
 
-The board is on the left, a glowing move tree on the right. Legal moves only. Each move becomes a node; click a node to jump there. Right-click to add a variation or a note. Turn on **Sandbox** to try ideas — turning it off restores the position you started from.
+The board is on the left, a glowing move tree on the right. Legal moves only. Each move becomes a node; click a node to jump there. Right-click to add a variation or a note. The board is drawn like a real one: traditional characters, star points at the cannon and pawn positions, double-line border.
 
 ![Study board](pics/中炮对屏风马.png)
 
-**AI analysis** in the toolbar sends the board as it stands to the engine — no need to set the position up again. It takes over the right-hand column as a second tab next to the move tree, so you can switch back and forth. Works for opening lines and for midgame / endgame / full-game cases alike.
+The toolbar buttons:
 
-**Flip view** swaps red and black at any time, file numbers included (black is always 1-9, red always 一-九). Opening lines can also export the whole move tree as a PNG. Playing a move, stepping back and forth, or jumping to a node all play a piece-drop sound; the speaker icon mutes it. When a general gets captured, the winner is shown next to the title.
+- **Export move tree** — save the whole tree as an image (opening lines only)
+- **Flip view** — swap red and black; file numbers flip too. Black is always 1-9, red always 一-九
+- **AI analysis** — analyse the board as it stands, no need to set it up again
+- **Sandbox** — try ideas freely; turning it off restores the position you started from, and you can step back and forth while trying
+- **🔊** — piece-drop sound on/off
+
+Playing a move, stepping back and forth, and jumping to a node all play a sound. When a general gets captured, the winner is shown next to the title.
+
+Hitting **AI analysis** turns the right-hand column into two tabs — move tree and analysis — so you can switch back and forth without losing the result.
 
 ![One-click AI analysis while studying](pics/中炮对屏风马AI.png)
 
