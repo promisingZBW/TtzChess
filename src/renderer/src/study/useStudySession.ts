@@ -14,6 +14,7 @@ import {
   createEmptyBoard,
   EMPTY_BOARD_FEN,
   getLegalMovesFrom,
+  isInCheck,
   isLegalMove,
   moveToChineseNotation,
   moveToUcciCoord,
@@ -24,6 +25,8 @@ import {
 } from '@shared/chess'
 import type { Board, Piece, Position, Side } from '@shared/chess'
 import type { MoveNode } from '@shared/moveTree'
+import type { SandboxFrame } from '../analysis/sandboxPlay'
+import { playMoveSound } from '../audio/moveSounds'
 import { collectSubtreeIds, computePathFromRoot, nextForwardNodeId } from './moveTreeUtils'
 
 export interface StudySubjectRef {
@@ -44,8 +47,9 @@ type SessionMode = 'placing' | 'recording'
 
 interface SandboxState {
   entryNodeId: string
-  board: Board
-  sideToMove: Side
+  /** 沙盘自己的走法历史，[0] 是进入沙盘时的局面，一路退到底就回到起点 */
+  history: SandboxFrame[]
+  cursor: number
 }
 
 interface SelectionState {
@@ -85,6 +89,11 @@ export interface UseStudySessionResult {
   // 沙盘模式
   isSandbox: boolean
   toggleSandbox: () => void
+  /** 沙盘里试走的前进后退，和正式棋谱树的前进后退互不影响 */
+  sandboxBack: () => void
+  sandboxForward: () => void
+  canSandboxBack: boolean
+  canSandboxForward: boolean
 
   // 笔记
   setNoteText: (nodeId: string, text: string | null) => Promise<void>
@@ -188,19 +197,21 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
   const currentNode = currentNodeId ? (nodes.get(currentNodeId) ?? null) : null
   const rootChildCount = subject ? (nodes.get(subject.rootNodeId)?.childrenIds.length ?? 0) : 0
 
+  const sandboxFrame = sandbox ? sandbox.history[sandbox.cursor] : null
+
   const board = useMemo<Board>(() => {
     if (mode === 'placing') return placingBoard
-    if (sandbox) return sandbox.board
+    if (sandboxFrame) return sandboxFrame.board
     if (!currentNode) return createEmptyBoard()
     return parseFen(currentNode.boardStateFEN).board
-  }, [mode, placingBoard, sandbox, currentNode])
+  }, [mode, placingBoard, sandboxFrame, currentNode])
 
   const sideToMove = useMemo<Side>(() => {
     if (mode === 'placing') return 'red'
-    if (sandbox) return sandbox.sideToMove
+    if (sandboxFrame) return sandboxFrame.sideToMove
     if (!currentNode) return 'red'
     return parseFen(currentNode.boardStateFEN).sideToMove
-  }, [mode, sandbox, currentNode])
+  }, [mode, sandboxFrame, currentNode])
 
   async function handleSquareClick(pos: Position): Promise<void> {
     if (mode !== 'recording' || !subject || !currentNode) return
@@ -229,13 +240,17 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
     setSelection(NO_SELECTION)
 
     const notation = moveToChineseNotation(board, move)
+    const captured = board[pos.row][pos.col] !== null
     const nextBoard = applyMove(board, move)
     const nextSide = opponentOf(sideToMove)
     const nextFEN = boardToFen(nextBoard, nextSide)
+    playMoveSound({ captured, check: isInCheck(nextBoard, nextSide) })
 
     if (sandbox) {
-      // 沙盘模式：只更新沙盘覆盖层，不产生任何持久化写入
-      setSandbox({ ...sandbox, board: nextBoard, sideToMove: nextSide })
+      // 沙盘模式：只往沙盘自己的历史里追加，不产生任何持久化写入。
+      // 退回去几步之后又走新的一步，就把原来那条"未来"丢掉，和浏览器的前进后退一个意思。
+      const history = [...sandbox.history.slice(0, sandbox.cursor + 1), { board: nextBoard, sideToMove: nextSide }]
+      setSandbox({ ...sandbox, history, cursor: history.length - 1 })
       return
     }
 
@@ -331,8 +346,25 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
       setSandbox(null)
     } else {
       const { board: entryBoard, sideToMove: entrySide } = parseFen(currentNode.boardStateFEN)
-      setSandbox({ entryNodeId: currentNode.id, board: entryBoard, sideToMove: entrySide })
+      setSandbox({
+        entryNodeId: currentNode.id,
+        history: [{ board: entryBoard, sideToMove: entrySide }],
+        cursor: 0
+      })
     }
+    setSelection(NO_SELECTION)
+  }
+
+  /** 沙盘里的前进后退：只在沙盘自己那条历史上移动，正式棋谱树的光标一动不动 */
+  function sandboxBack(): void {
+    setSandbox((prev) => (prev && prev.cursor > 0 ? { ...prev, cursor: prev.cursor - 1 } : prev))
+    setSelection(NO_SELECTION)
+  }
+
+  function sandboxForward(): void {
+    setSandbox((prev) =>
+      prev && prev.cursor < prev.history.length - 1 ? { ...prev, cursor: prev.cursor + 1 } : prev
+    )
     setSelection(NO_SELECTION)
   }
 
@@ -448,6 +480,10 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
 
     isSandbox: sandbox !== null,
     toggleSandbox,
+    sandboxBack,
+    sandboxForward,
+    canSandboxBack: sandbox !== null && sandbox.cursor > 0,
+    canSandboxForward: sandbox !== null && sandbox.cursor < sandbox.history.length - 1,
 
     setNoteText,
 

@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { openAppDatabase } from './db/appDatabase'
 import { registerMoveTreeIpc } from './ipc/moveTreeIpc'
 import { registerEngineIpc } from './ipc/engineIpc'
+import { registerExportIpc } from './ipc/exportIpc'
 import { createAppEngineService } from './engine/appEngine'
 import type { ChessDatabase } from './db'
 import type { EngineService } from './engine'
@@ -64,6 +65,8 @@ app.whenReady().then(() => {
   // analyzePosition会抛出明确的错误提示，不会导致应用启动失败或崩溃
   engineService = createAppEngineService()
   registerEngineIpc(engineService)
+
+  registerExportIpc()
 
   createMainWindow()
 

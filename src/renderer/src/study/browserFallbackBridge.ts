@@ -12,6 +12,7 @@
 
 import type {
   ChessOCBridge,
+  SaveImageResult,
   CreateFolderRequest,
   CreateMoveNodeRequest,
   CreateOpeningStudyRequest,
@@ -358,6 +359,16 @@ export function createBrowserFallbackBridge(): ChessOCBridge {
       },
       async getStatus(): Promise<EngineStatus> {
         return { state: 'unavailable', reason: '浏览器演示模式不支持引擎分析' }
+      }
+    },
+    exporter: {
+      // 浏览器里没有系统保存对话框，退化成浏览器自己的下载：效果一样是"存一张图到本地"
+      async savePngImage(defaultFileName: string, base64: string): Promise<SaveImageResult> {
+        const link = document.createElement('a')
+        link.href = `data:image/png;base64,${base64}`
+        link.download = defaultFileName
+        link.click()
+        return { saved: true }
       }
     }
   }

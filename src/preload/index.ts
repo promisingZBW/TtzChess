@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { ENGINE_CHANNELS, MOVE_TREE_CHANNELS } from '../shared/ipc'
+import { ENGINE_CHANNELS, EXPORT_CHANNELS, MOVE_TREE_CHANNELS } from '../shared/ipc'
 import type {
   ChessOCBridge,
   CreateFolderRequest,
@@ -59,6 +59,10 @@ const api: ChessOCBridge = {
   engine: {
     analyzePosition: (fen: string, depth?: number) => ipcRenderer.invoke(ENGINE_CHANNELS.analyzePosition, fen, depth),
     getStatus: () => ipcRenderer.invoke(ENGINE_CHANNELS.getStatus)
+  },
+  exporter: {
+    savePngImage: (defaultFileName: string, base64: string) =>
+      ipcRenderer.invoke(EXPORT_CHANNELS.savePngImage, defaultFileName, base64)
   }
 }
 

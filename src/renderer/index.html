@@ -2,9 +2,16 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <!--
+      img-src 额外放开 data: 和 blob:，是为了"把棋谱树导出成图片"这个功能：
+      导出时要先把生成好的 SVG 塞进 <img>、再画到 canvas 上转成 PNG，而 <img> 的地址
+      只能是 blob:（或 data:）。默认的 default-src 'self' 会把这两种地址一起挡掉。
+      放开的只是图片，而且 data:/blob: 都是本页面自己现造的数据，不能用来加载外部资源，
+      script-src 依然只允许 'self'，该拦的脚本注入一个都没松。
+    -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:"
     />
     <title>TtzChess</title>
   </head>

@@ -13,6 +13,7 @@ import { collectFullGameToLibrary } from './collectFullGame'
 import { runSinglePositionAnalysis, type SingleAnalysisResult } from './singlePositionAnalysis'
 import { useEngineStatus } from './useEngineStatus'
 import { useFullGameAnalysis } from './useFullGameAnalysis'
+import { SoundToggleButton } from '../audio/SoundToggleButton'
 import { WinRateChart } from './WinRateChart'
 import { WinRateValue } from './WinRateValue'
 
@@ -167,6 +168,7 @@ export function FullGameAnalysisPage({ onBack }: FullGameAnalysisPageProps): Rea
           >
             {session.isSandbox ? '退出沙盘演练' : '沙盘演练模式'}
           </button>
+          <SoundToggleButton />
           <button onClick={openCollectDialog} disabled={collectStatus === 'saving'}>
             {collectStatus === 'saved' ? '已收藏 ✓' : collectStatus === 'saving' ? '收藏中…' : '收藏到整局案例库'}
           </button>
@@ -190,6 +192,16 @@ export function FullGameAnalysisPage({ onBack }: FullGameAnalysisPageProps): Rea
               legalTargets={session.selection.legalTargets}
               onSquareClick={session.handleSquareClick}
             />
+            {session.isSandbox && (
+              <div className="study-nav-buttons">
+                <button onClick={session.sandboxBack} disabled={!session.canSandboxBack}>
+                  ← 后退
+                </button>
+                <button onClick={session.sandboxForward} disabled={!session.canSandboxForward}>
+                  前进 →
+                </button>
+              </div>
+            )}
             <div className="analysis-controls">
               <button onClick={session.undoLastMove} disabled={!session.canUndo}>
                 撤回上一步

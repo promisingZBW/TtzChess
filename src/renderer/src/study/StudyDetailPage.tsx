@@ -6,8 +6,9 @@
 // 再横着塞一列分析结果棋盘就没地方放了，所以点AI分析时直接把棋谱树盖住，随时可以切回去。
 
 import { useState } from 'react'
-import { boardToFen } from '@shared/chess'
-import type { Piece, Position } from '@shared/chess'
+import { boardToFen, winnerFromBoard } from '@shared/chess'
+import type { Piece, Position, Side } from '@shared/chess'
+import { SoundToggleButton } from '../audio/SoundToggleButton'
 import { BoardAnalysisPanel } from '../analysis/BoardAnalysisPanel'
 import { usePositionAnalysis } from '../analysis/usePositionAnalysis'
 import { BoardView } from '../board/BoardView'
@@ -16,6 +17,7 @@ import { MoveTreePanel } from './MoveTreePanel'
 import { PlacementTray } from './PlacementTray'
 import { PlacementGhost } from './PlacementGhost'
 import { useKeyboardPlacement } from './useKeyboardPlacement'
+import { renderMoveTreeSvg, svgToPngBase64 } from './exportMoveTreeSvg'
 import { useStudySession, type StudySubjectRef } from './useStudySession'
 
 interface StudyDetailPageProps {
@@ -31,6 +33,16 @@ const SAVE_BUTTON_LABEL: Record<'idle' | 'saving' | 'saved', string> = {
 
 type RightPane = 'tree' | 'analysis'
 
+const WINNER_LABEL: Record<Side, string> = { red: '红方胜利', black: '黑方胜利' }
+
+/** Windows 文件名里不能出现的那几个字符，用谱名当默认文件名之前先洗一遍 */
+const FORBIDDEN_FILENAME_CHARS = '\\/:*?"<>|'
+
+function toSafeFileName(title: string): string {
+  const cleaned = [...title].map((ch) => (FORBIDDEN_FILENAME_CHARS.includes(ch) ? '_' : ch)).join('')
+  return cleaned.trim() || '棋谱树'
+}
+
 export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): React.JSX.Element {
   const session = useStudySession(subjectRef)
   const keyboard = useKeyboardPlacement(session.mode === 'placing')
@@ -41,6 +53,8 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [rightPane, setRightPane] = useState<RightPane>('tree')
   const [confirmRestart, setConfirmRestart] = useState(false)
+  const [flipped, setFlipped] = useState(false)
+  const [exportHint, setExportHint] = useState<string | null>(null)
 
   function handleDropPiece(pos: Position, payload: PieceDragPayload): void {
     if (payload.fromBoard) {
@@ -61,6 +75,27 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
     setAnalysisOpen(false)
     setRightPane('tree')
     analysis.reset()
+  }
+
+  /** 把当前棋谱树导出成 PNG。只有开局棋路给这个入口——案例库那边的树通常就几步，没必要 */
+  async function handleExportTree(): Promise<void> {
+    if (!session.rootNodeId || !session.subject) return
+    setExportHint(null)
+    try {
+      const rendered = renderMoveTreeSvg(session.nodes, session.rootNodeId, session.subject.title)
+      if (!rendered) {
+        setExportHint('棋谱树还是空的，先走几步再导出。')
+        return
+      }
+      const base64 = await svgToPngBase64(rendered)
+      const result = await window.chessoc.exporter.savePngImage(
+        `${toSafeFileName(session.subject.title)}.png`,
+        base64
+      )
+      if (result.saved) setExportHint('棋谱树已保存 ✓')
+    } catch (err) {
+      setExportHint(`导出失败：${err instanceof Error ? err.message : String(err)}`)
+    }
   }
 
   function handleRestartPlacement(): void {
@@ -86,6 +121,9 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
 
   const hasPieces = session.board.some((row) => row.some((square) => square !== null))
   const treeAvailable = session.mode === 'recording' && session.rootNodeId !== null
+  // 摆局阶段棋盘上本来就可能只有一个将，那不叫分出胜负，所以只在打谱阶段看
+  const winner = session.mode === 'recording' ? winnerFromBoard(session.board) : null
+  const isOpening = session.subject.kind === 'opening'
   const showTreePane = rightPane === 'tree' && treeAvailable
   const showAnalysisPane = rightPane === 'analysis' && analysisOpen
 
@@ -96,9 +134,22 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
           ← 返回首页
         </button>
         <h2 className="study-title">{session.subject.title}</h2>
+        {winner && <span className={`study-winner-badge study-winner-${winner}`}>{WINNER_LABEL[winner]}</span>}
         <div className="study-toolbar-right">
           <button onClick={session.save} disabled={session.saveStatus === 'saving'}>
             {SAVE_BUTTON_LABEL[session.saveStatus]}
+          </button>
+          {isOpening && (
+            <button onClick={handleExportTree} title="把右边这棵棋谱树存成一张图片">
+              输出棋谱树
+            </button>
+          )}
+          <button
+            className={flipped ? 'flip-toggle flip-toggle-active' : 'flip-toggle'}
+            onClick={() => setFlipped((prev) => !prev)}
+            title="红黑视角对调，棋盘和两侧路数一起翻转"
+          >
+            反转视角
           </button>
           <button
             className={showAnalysisPane ? 'analysis-toggle analysis-toggle-active' : 'analysis-toggle'}
@@ -116,8 +167,10 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
           >
             {session.isSandbox ? '退出沙盘演练' : '沙盘演练模式'}
           </button>
+          <SoundToggleButton />
         </div>
       </header>
+      {exportHint && <p className="study-export-hint">{exportHint}</p>}
 
       <div className="study-body">
         <div className="study-board-column">
@@ -150,6 +203,7 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
                   ? { onDropPiece: handleDropPiece, onRemovePiece: session.removePlacedPiece }
                   : undefined
               }
+              flipped={flipped}
             />
             {session.mode === 'placing' && keyboard.heldPiece && (
               <PlacementGhost piece={keyboard.heldPiece} pointer={keyboard.pointer} />
@@ -171,11 +225,19 @@ export function StudyDetailPage({ subjectRef, onBack }: StudyDetailPageProps): R
               </button>
             )}
 
+            {/* 沙盘里走的是沙盘自己那条历史，退到底就回到进沙盘时的局面；
+                正式打谱时走的是棋谱树。两套历史互不干扰，所以按钮共用一排就行 */}
             <div className="study-nav-buttons">
-              <button onClick={session.goBack} disabled={!session.canGoBack}>
+              <button
+                onClick={session.isSandbox ? session.sandboxBack : session.goBack}
+                disabled={session.isSandbox ? !session.canSandboxBack : !session.canGoBack}
+              >
                 ← 后退
               </button>
-              <button onClick={session.goForward} disabled={!session.canGoForward}>
+              <button
+                onClick={session.isSandbox ? session.sandboxForward : session.goForward}
+                disabled={session.isSandbox ? !session.canSandboxForward : !session.canGoForward}
+              >
                 前进 →
               </button>
             </div>

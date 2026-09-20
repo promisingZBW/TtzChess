@@ -12,12 +12,17 @@ import type { OpeningPieceType } from '@shared/moveTree'
 import { getPieceLabel } from '@shared/chess'
 import type { SunburstCenterData, SunburstStudyNode } from './openingSunburstUtils'
 
-const CANVAS_SIZE = 240
-const CENTER = CANVAS_SIZE / 2
-const HUB_RADIUS = 34
-const SPOKE_LENGTH = 80
-const BALL_RADIUS = 10
-const LABEL_GAP = 12
+// 一屏只画一个中心点，所以画布可以开得很大，谱名再长也铺得开。
+// 画布做成横着的长方形而不是正方形：左右两根辐条上的谱名是横着写的，
+// 正方形画布会把它们顶出边界裁掉（谱名一长就更明显）。
+const CANVAS_W = 900
+const CANVAS_H = 560
+const CENTER_X = CANVAS_W / 2
+const CENTER_Y = CANVAS_H / 2
+const HUB_RADIUS = 58
+const SPOKE_LENGTH = 160
+const BALL_RADIUS = 15
+const LABEL_GAP = 16
 
 interface SpokeLayout {
   study: SunburstStudyNode
@@ -64,10 +69,10 @@ function OpeningSunburstCenter({
     <div className="sunburst-center">
       <svg
         className="sunburst-canvas"
-        viewBox={`0 0 ${CANVAS_SIZE} ${CANVAS_SIZE}`}
+        viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
         preserveAspectRatio="xMidYMid meet"
       >
-        <g transform={`translate(${CENTER}, ${CENTER})`}>
+        <g transform={`translate(${CENTER_X}, ${CENTER_Y})`}>
           {spokes.map(({ study, angle }) => {
             const cos = Math.cos(angle)
             const sin = Math.sin(angle)
@@ -111,28 +116,26 @@ function OpeningSunburstCenter({
           </text>
         </g>
       </svg>
-      <p className="sunburst-center-caption">{center.centerLabel}</p>
     </div>
   )
 }
 
 interface OpeningSunburstProps {
-  centers: SunburstCenterData[]
+  center: SunburstCenterData
   onEnterStudy: (studyId: string) => void
   onCreateStudy: (pieceType: OpeningPieceType) => void
 }
 
-export function OpeningSunburst({ centers, onEnterStudy, onCreateStudy }: OpeningSunburstProps): React.JSX.Element {
+/**
+ * 一次只显示一个开局的径向图。
+ *
+ * 之前是五个中心点并排挤在一屏里，每个只分到窗口五分之一的宽度，谱名一长就互相盖住、
+ * 甚至被裁掉（用户反馈里的问题）。改成上面一排按钮切换、下面整屏画一个，空间一下就够了。
+ */
+export function OpeningSunburst({ center, onEnterStudy, onCreateStudy }: OpeningSunburstProps): React.JSX.Element {
   return (
-    <div className="sunburst-row">
-      {centers.map((center) => (
-        <OpeningSunburstCenter
-          key={center.pieceType}
-          center={center}
-          onEnterStudy={onEnterStudy}
-          onCreateStudy={onCreateStudy}
-        />
-      ))}
+    <div className="sunburst-single">
+      <OpeningSunburstCenter center={center} onEnterStudy={onEnterStudy} onCreateStudy={onCreateStudy} />
     </div>
   )
 }

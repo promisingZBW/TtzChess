@@ -188,7 +188,19 @@ select {
 
 .board-outer-border {
   stroke: var(--board-ink);
-  stroke-width: 3.5;
+  stroke-width: 2;
+}
+
+/* 双线外框的外面那条，粗一些 */
+.board-outer-border-thick {
+  stroke-width: 5;
+}
+
+/* 星位（炮位/卒林）的小拐角，比棋盘格线细一点，免得喧宾夺主 */
+.board-star-points line {
+  stroke: var(--board-ink);
+  stroke-width: 1.8;
+  stroke-linecap: round;
 }
 
 .board-grid-lines line {
@@ -1756,4 +1768,108 @@ select {
 .restart-placement-button:hover {
   border-color: var(--border-bronze-strong);
   color: var(--text-primary);
+}
+
+
+/* ---------- 0.3.0 新增的几个小控件 ---------- */
+
+/* 顶部工具栏：标题右边的胜负标记 */
+.study-winner-badge {
+  flex-shrink: 0;
+  padding: 4px 14px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.study-winner-red {
+  border: 1px solid var(--accent-cinnabar-bright);
+  background: rgba(217, 72, 61, 0.18);
+  color: var(--accent-cinnabar-bright);
+}
+
+.study-winner-black {
+  border: 1px solid var(--text-primary);
+  background: rgba(240, 230, 210, 0.12);
+  color: var(--text-primary);
+}
+
+.flip-toggle-active {
+  background: rgba(201, 161, 90, 0.3) !important;
+  border-color: var(--accent-gold) !important;
+  color: var(--accent-gold-bright) !important;
+}
+
+/* 静音开关只放一个图标，工具栏按钮已经不少了，不能再占宽度 */
+.sound-toggle {
+  padding: 7px 10px !important;
+  line-height: 1;
+}
+
+.study-export-hint {
+  margin: 0;
+  padding: 6px 20px;
+  font-size: 13px;
+  color: var(--accent-gold-bright);
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-bronze);
+  flex-shrink: 0;
+}
+
+/* ---------- 开局径向图：一次只看一个开局 ---------- */
+/* 五个中心点原来并排挤一屏，每个只有五分之一宽度，谱名长一点就互相盖住甚至被裁掉。
+   改成上面一排按钮切换、下面整屏画一个。 */
+
+.opening-type-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.opening-type-tab {
+  padding: 7px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-bronze);
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  font-family: var(--font-heading);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.opening-type-tab:hover {
+  border-color: var(--border-bronze-strong);
+  color: var(--text-primary);
+}
+
+.opening-type-tab-active {
+  border-color: var(--accent-gold);
+  background: rgba(201, 161, 90, 0.22);
+  color: var(--accent-gold-bright);
+  font-weight: 700;
+}
+
+.sunburst-single {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.sunburst-single .sunburst-center {
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
+  width: 100%;
+}
+
+.sunburst-single .sunburst-canvas {
+  /* viewBox 是横着的长方形，交给 preserveAspectRatio 去等比缩放，这里铺满容器就行 */
+  width: 100%;
+  height: 100%;
 }

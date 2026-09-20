@@ -1,7 +1,12 @@
 // 纯展示 + 点击转发的棋盘组件：只管"画出棋盘、画出子、把点击的格子坐标报告出去"，
 // 不知道也不关心规则引擎、当前是谁的回合——那些状态和逻辑都在 useXiangqiGame 里。
+//
+// 反转视角（flipped）只改"棋盘坐标画到屏幕哪个位置"，不动棋盘数据本身：
+// 所有对外的 Position 依然是数据坐标，调用方不用管现在是正着看还是反着看。
+// 棋盘的线、九宫、星位、河界在 180° 旋转下都是对称的，所以只有棋子、命中区
+// 和两侧的路数需要跟着翻。
 
-import { getPieceLabel } from '@shared/chess'
+import { getPieceBoardLabel } from '@shared/chess'
 import type { Board, Position } from '@shared/chess'
 import grainTextureUrl from '../assets/grain-texture.png'
 import { readPieceDragData, setPieceDragData, type PieceDragPayload } from '../study/dragTypes'
@@ -19,6 +24,8 @@ interface BoardViewProps {
   legalTargets: Position[]
   onSquareClick?: (pos: Position) => void
   placement?: BoardPlacementHandlers
+  /** true = 黑方在下、红方在上 */
+  flipped?: boolean
 }
 
 function isSamePosition(a: Position, b: Position): boolean {
@@ -63,6 +70,55 @@ function PalaceDiagonals(): React.JSX.Element {
   )
 }
 
+/** 星位：炮位（row2/row7 的 1、7 路）和卒林（row3/row6 每隔一列一个），实体棋盘上刻的那圈小拐角 */
+const STAR_POINTS: Position[] = [
+  ...[2, 7].flatMap((row) => [1, 7].map((col) => ({ row, col }))),
+  ...[3, 6].flatMap((row) => [0, 2, 4, 6, 8].map((col) => ({ row, col })))
+]
+
+const STAR_GAP = 6 // 拐角离交叉点的距离
+const STAR_ARM = 11 // 每条短边的长度
+
+/**
+ * 一个星位 = 交叉点四周四个"┌ ┐ └ ┘"小拐角。
+ * 贴着棋盘左右边线的点（1路和9路）只画朝里的那两个，朝外那两个会跑到棋盘外面去。
+ */
+function StarPoint({ row, col }: Position): React.JSX.Element {
+  const x = colToX(col)
+  const y = rowToY(row)
+  const corners: Array<{ dx: number; dy: number }> = []
+  for (const dx of [-1, 1]) {
+    if (dx === -1 && col === 0) continue
+    if (dx === 1 && col === COLS - 1) continue
+    for (const dy of [-1, 1]) corners.push({ dx, dy })
+  }
+
+  return (
+    <>
+      {corners.map(({ dx, dy }) => {
+        const cx = x + dx * STAR_GAP
+        const cy = y + dy * STAR_GAP
+        return (
+          <g key={`${dx}-${dy}`}>
+            <line x1={cx} y1={cy} x2={cx + dx * STAR_ARM} y2={cy} />
+            <line x1={cx} y1={cy} x2={cx} y2={cy + dy * STAR_ARM} />
+          </g>
+        )
+      })}
+    </>
+  )
+}
+
+function StarPoints(): React.JSX.Element {
+  return (
+    <g className="board-star-points">
+      {STAR_POINTS.map((pos) => (
+        <StarPoint key={`${pos.row}-${pos.col}`} {...pos} />
+      ))}
+    </g>
+  )
+}
+
 /** 棋子的雕刻感斜面（径向渐变）+ 棋盘表面的宣纸/木纹肌理（复用全局背景同一张生成图），
  * 两者都得放进SVG自己的<defs>里才能被.piece的CSS `fill: url(#pieceGradient)`和棋盘背景
  * 的<pattern>引用到——纯CSS做不到给SVG图形填充渐变/图片，只能在SVG里预先定义好。 */
@@ -81,9 +137,17 @@ function BoardDefs(): React.JSX.Element {
   )
 }
 
-function FileCoordinates(): React.JSX.Element {
-  const topLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
-  const bottomLabels = ['九', '八', '七', '六', '五', '四', '三', '二', '一']
+const BLACK_FILES = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+const RED_FILES = ['九', '八', '七', '六', '五', '四', '三', '二', '一']
+
+/**
+ * 路数永远跟着自己那一方：黑方是阿拉伯数字 1-9，红方是汉字一-九，
+ * 谁在屏幕下面就把谁的路数画在下面。反转之后两边的数字顺序也跟着倒过来，
+ * 因为棋盘是整个转了 180°，原来在左边的那一路现在在右边。
+ */
+function FileCoordinates({ flipped }: { flipped: boolean }): React.JSX.Element {
+  const topLabels = flipped ? [...RED_FILES].reverse() : BLACK_FILES
+  const bottomLabels = flipped ? [...BLACK_FILES].reverse() : RED_FILES
   return (
     <g className="board-file-labels">
       {topLabels.map((label, col) => (
@@ -92,12 +156,7 @@ function FileCoordinates(): React.JSX.Element {
         </text>
       ))}
       {bottomLabels.map((label, col) => (
-        <text
-          key={`bottom-${col}`}
-          x={colToX(col)}
-          y={BOARD_HEIGHT - 16}
-          textAnchor="middle"
-        >
+        <text key={`bottom-${col}`} x={colToX(col)} y={BOARD_HEIGHT - 16} textAnchor="middle">
           {label}
         </text>
       ))}
@@ -119,15 +178,25 @@ function RiverLabel(): React.JSX.Element {
   )
 }
 
-export function BoardView({ board, selected, legalTargets, onSquareClick, placement }: BoardViewProps): React.JSX.Element {
+export function BoardView({
+  board,
+  selected,
+  legalTargets,
+  onSquareClick,
+  placement,
+  flipped = false
+}: BoardViewProps): React.JSX.Element {
+  const toX = (col: number): number => colToX(flipped ? COLS - 1 - col : col)
+  const toY = (row: number): number => rowToY(flipped ? ROWS - 1 - row : row)
+
   const intersections: React.JSX.Element[] = []
 
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
       const pos: Position = { row, col }
       const piece = board[row][col]
-      const x = colToX(col)
-      const y = rowToY(row)
+      const x = toX(col)
+      const y = toY(row)
       const isSelected = selected !== null && isSamePosition(selected, pos)
       const isLegalTarget = legalTargets.some((target) => isSamePosition(target, pos))
 
@@ -170,7 +239,7 @@ export function BoardView({ board, selected, legalTargets, onSquareClick, placem
                 r={24}
               />
               <text className={`piece-label piece-label-${piece.side}`} x={x} y={y} dominantBaseline="central" textAnchor="middle">
-                {getPieceLabel(piece)}
+                {getPieceBoardLabel(piece)}
               </text>
             </g>
           )}
@@ -202,18 +271,25 @@ export function BoardView({ board, selected, legalTargets, onSquareClick, placem
         <HorizontalLines />
         <VerticalLines />
         <PalaceDiagonals />
-        {/* 边框线的位置正好贴着最外圈棋子的边缘，必须在棋子渲染之前画，
-            否则会盖在棋子上面（这条线之前被错误地放在了{intersections}后面）。 */}
-        <rect
-          x={BOARD_MARGIN - 2}
-          y={BOARD_MARGIN - 2}
-          width={BOARD_WIDTH - (BOARD_MARGIN - 2) * 2}
-          height={BOARD_HEIGHT - (BOARD_MARGIN - 2) * 2}
-          className="board-outer-border"
-          fill="none"
-        />
+        <StarPoints />
+        {/* 双线外框：外面一条粗、里面一条细，实体棋盘就是这么包边的。
+            必须在棋子渲染之前画，否则会盖在棋子上面。 */}
+        {[
+          { inset: BOARD_MARGIN - 20, className: 'board-outer-border board-outer-border-thick' },
+          { inset: BOARD_MARGIN - 12, className: 'board-outer-border' }
+        ].map(({ inset, className }) => (
+          <rect
+            key={className}
+            x={inset}
+            y={inset}
+            width={BOARD_WIDTH - inset * 2}
+            height={BOARD_HEIGHT - inset * 2}
+            className={className}
+            fill="none"
+          />
+        ))}
         <RiverLabel />
-        <FileCoordinates />
+        <FileCoordinates flipped={flipped} />
         {intersections}
       </svg>
     </div>

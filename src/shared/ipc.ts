@@ -79,6 +79,25 @@ export const MOVE_TREE_CHANNELS = {
   deleteStudyCase: 'moveTree:deleteStudyCase'
 } as const
 
+/** 导出文件相关的IPC channel */
+export const EXPORT_CHANNELS = {
+  savePngImage: 'export:savePngImage'
+} as const
+
+export interface SaveImageResult {
+  saved: boolean
+  /** 用户取消时没有这个字段 */
+  filePath?: string
+}
+
+export interface ExportBridge {
+  /**
+   * 弹保存对话框、把一张PNG写到用户选的位置。
+   * @param base64 不带 `data:image/png;base64,` 前缀的纯 base64
+   */
+  savePngImage(defaultFileName: string, base64: string): Promise<SaveImageResult>
+}
+
 /** 阶段6：Pikafish引擎分析相关的IPC channel */
 export const ENGINE_CHANNELS = {
   analyzePosition: 'engine:analyzePosition',
@@ -143,4 +162,5 @@ export interface ChessOCBridge {
   versions: ChessOCVersions
   moveTree: MoveTreeBridge
   engine: EngineBridge
+  exporter: ExportBridge
 }

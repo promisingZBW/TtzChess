@@ -7,6 +7,7 @@ import {
   applyMove,
   boardToFen,
   getLegalMovesFrom,
+  isInCheck,
   isLegalMove,
   moveToChineseNotation,
   moveToUcciCoord,
@@ -16,7 +17,17 @@ import {
   STANDARD_START_FEN
 } from '@shared/chess'
 import type { Board, Position, Side } from '@shared/chess'
-import { clickSandboxSquare, EMPTY_SANDBOX_SELECTION, type SandboxPosition } from './sandboxPlay'
+import {
+  canSandboxGoBack,
+  canSandboxGoForward,
+  clickSandboxSquare,
+  createSandbox,
+  sandboxFrame,
+  sandboxGoBack,
+  sandboxGoForward,
+  type SandboxPosition
+} from './sandboxPlay'
+import { playMoveSound } from '../audio/moveSounds'
 import { winRatePercentFromPerspective } from './singlePositionAnalysis'
 import type { EngineWdl } from '@shared/engine'
 
@@ -58,6 +69,11 @@ export interface UseFullGameAnalysisResult {
 
   isSandbox: boolean
   toggleSandbox: () => void
+  /** 沙盘里试走的前进后退，独立于正式棋路的历史 */
+  sandboxBack: () => void
+  sandboxForward: () => void
+  canSandboxBack: boolean
+  canSandboxForward: boolean
 
   selection: SelectionState
   handleSquareClick: (pos: Position) => void
@@ -136,18 +152,19 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
     } else {
       const current = history[viewingIndex]
       if (!current) return
-      setSandbox({
-        board: current.board,
-        sideToMove: current.sideToMove,
-        selection: EMPTY_SANDBOX_SELECTION
-      })
+      setSandbox(createSandbox(current.board, current.sideToMove))
     }
     setSelection(NO_SELECTION)
   }
 
   function handleSquareClick(pos: Position): void {
     if (sandbox) {
-      setSandbox(clickSandboxSquare(sandbox, pos))
+      const { state, moved } = clickSandboxSquare(sandbox, pos)
+      setSandbox(state)
+      if (moved) {
+        const frame = sandboxFrame(state)
+        playMoveSound({ captured: moved.captured, check: isInCheck(frame.board, frame.sideToMove) })
+      }
       return
     }
 
@@ -199,9 +216,19 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
   }
 
   const viewingEntry = history[viewingIndex] ?? null
-  const displayBoard = sandbox?.board ?? viewingEntry?.board ?? parseFen(STANDARD_START_FEN).board
-  const displaySide = sandbox?.sideToMove ?? viewingEntry?.sideToMove ?? 'red'
+  const sandboxView = sandbox ? sandboxFrame(sandbox) : null
+  const displayBoard = sandboxView?.board ?? viewingEntry?.board ?? parseFen(STANDARD_START_FEN).board
+  const displaySide = sandboxView?.sideToMove ?? viewingEntry?.sideToMove ?? 'red'
   const displaySelection = sandbox?.selection ?? selection
+
+  /** 沙盘里的前进后退，和正式棋路的前进后退是两套独立的历史，互不影响 */
+  function sandboxBack(): void {
+    setSandbox((prev) => (prev ? sandboxGoBack(prev) : prev))
+  }
+
+  function sandboxForward(): void {
+    setSandbox((prev) => (prev ? sandboxGoForward(prev) : prev))
+  }
 
   return {
     started,
@@ -218,6 +245,10 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
     canUndo: !sandbox && history.length > 1,
     isSandbox: sandbox !== null,
     toggleSandbox,
+    sandboxBack,
+    sandboxForward,
+    canSandboxBack: sandbox !== null && canSandboxGoBack(sandbox),
+    canSandboxForward: sandbox !== null && canSandboxGoForward(sandbox),
     selection: displaySelection,
     handleSquareClick,
     board: displayBoard,

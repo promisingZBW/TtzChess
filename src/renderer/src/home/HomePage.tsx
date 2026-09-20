@@ -6,7 +6,12 @@ import type { OpeningPieceType, OpeningRoot } from '@shared/moveTree'
 import type { StudySubjectRef } from '../study/useStudySession'
 import { AnalysisHomePage } from '../analysis/AnalysisHomePage'
 import { CaseLibraryPage } from '../library/CaseLibraryPage'
-import { buildSunburstCenters, ensureAllPieceTypeRoots, OPENING_CENTER_LABELS } from './openingSunburstUtils'
+import {
+  ALL_OPENING_PIECE_TYPES,
+  buildSunburstCenters,
+  ensureAllPieceTypeRoots,
+  OPENING_CENTER_LABELS
+} from './openingSunburstUtils'
 import type { SunburstCenterData } from './openingSunburstUtils'
 import { OpeningSunburst } from './OpeningSunburst'
 
@@ -53,6 +58,8 @@ export function HomePage({
 
   const [creatingPieceType, setCreatingPieceType] = useState<OpeningPieceType | null>(null)
   const [newStudyTitle, setNewStudyTitle] = useState('')
+  // 一次只看一个开局的径向图，上面一排按钮切换；默认停在当头炮局
+  const [activePieceType, setActivePieceType] = useState<OpeningPieceType>('C')
 
   useEffect(() => {
     if (activeTab !== 'opening') return
@@ -99,6 +106,23 @@ export function HomePage({
         {activeTab === 'opening' && (
           <section className="home-opening-pane">
             <h1>开局径向图</h1>
+            <div className="opening-type-tabs" role="tablist" aria-label="选择开局">
+              {ALL_OPENING_PIECE_TYPES.map((pieceType) => (
+                <button
+                  key={pieceType}
+                  role="tab"
+                  aria-selected={activePieceType === pieceType}
+                  className={
+                    activePieceType === pieceType
+                      ? 'opening-type-tab opening-type-tab-active'
+                      : 'opening-type-tab'
+                  }
+                  onClick={() => setActivePieceType(pieceType)}
+                >
+                  {OPENING_CENTER_LABELS[pieceType]}
+                </button>
+              ))}
+            </div>
             <p className="home-empty-hint">
               点中心的棋子图标新建一条棋路；点已创建棋路对应的小球，直接进入继续打谱。
             </p>
@@ -106,7 +130,13 @@ export function HomePage({
               <p>加载中…</p>
             ) : (
               <OpeningSunburst
-                centers={centers}
+                center={
+                  centers.find((c) => c.pieceType === activePieceType) ?? {
+                    pieceType: activePieceType,
+                    centerLabel: OPENING_CENTER_LABELS[activePieceType],
+                    studies: []
+                  }
+                }
                 onEnterStudy={(studyId) => onOpenSubject({ kind: 'opening', id: studyId })}
                 onCreateStudy={(pieceType) => {
                   setCreatingPieceType(pieceType)

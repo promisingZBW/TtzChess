@@ -4,7 +4,7 @@
 // 沙盘演练可以在当前局面上试走，关掉后回到进入前的摆局，不会改掉待分析的正式局面。
 
 import { useState } from 'react'
-import { createEmptyBoard, setSquare } from '@shared/chess'
+import { createEmptyBoard, isInCheck, setSquare } from '@shared/chess'
 import type { Board, Piece, Position, Side } from '@shared/chess'
 import { BoardView } from '../board/BoardView'
 import type { PieceDragPayload } from '../study/dragTypes'
@@ -13,7 +13,18 @@ import { PlacementGhost } from '../study/PlacementGhost'
 import { useKeyboardPlacement } from '../study/useKeyboardPlacement'
 import { EngineStatusBanner } from './EngineStatusBanner'
 import { SingleAnalysisResultsPanel } from './SingleAnalysisResultsPanel'
-import { clickSandboxSquare, EMPTY_SANDBOX_SELECTION, type SandboxPosition } from './sandboxPlay'
+import {
+  canSandboxGoBack,
+  canSandboxGoForward,
+  clickSandboxSquare,
+  createSandbox,
+  sandboxFrame,
+  sandboxGoBack,
+  sandboxGoForward,
+  type SandboxPosition
+} from './sandboxPlay'
+import { playMoveSound } from '../audio/moveSounds'
+import { SoundToggleButton } from '../audio/SoundToggleButton'
 import { runSinglePositionAnalysis, type SingleAnalysisResult } from './singlePositionAnalysis'
 import { useEngineStatus } from './useEngineStatus'
 
@@ -38,8 +49,9 @@ export function SinglePositionAnalysisPage({ onBack }: SinglePositionAnalysisPag
   const keyboard = useKeyboardPlacement(!sandbox)
 
   const hasAnyPiece = board.some((row) => row.some((square) => square !== null))
-  const displayBoard = sandbox?.board ?? board
-  const displaySide = sandbox?.sideToMove ?? sideToMove
+  const sandboxView = sandbox ? sandboxFrame(sandbox) : null
+  const displayBoard = sandboxView?.board ?? board
+  const displaySide = sandboxView?.sideToMove ?? sideToMove
 
   function placePiece(pos: Position, piece: Piece): void {
     if (sandbox) return
@@ -72,12 +84,25 @@ export function SinglePositionAnalysisPage({ onBack }: SinglePositionAnalysisPag
       return
     }
     if (!hasAnyPiece) return
-    setSandbox({ board, sideToMove, selection: EMPTY_SANDBOX_SELECTION })
+    setSandbox(createSandbox(board, sideToMove))
+  }
+
+  function sandboxBack(): void {
+    setSandbox((prev) => (prev ? sandboxGoBack(prev) : prev))
+  }
+
+  function sandboxForward(): void {
+    setSandbox((prev) => (prev ? sandboxGoForward(prev) : prev))
   }
 
   function handleSandboxClick(pos: Position): void {
     if (!sandbox) return
-    setSandbox(clickSandboxSquare(sandbox, pos))
+    const { state, moved } = clickSandboxSquare(sandbox, pos)
+    setSandbox(state)
+    if (moved) {
+      const frame = sandboxFrame(state)
+      playMoveSound({ captured: moved.captured, check: isInCheck(frame.board, frame.sideToMove) })
+    }
   }
 
   async function handleStartAnalysis(): Promise<void> {
@@ -110,6 +135,7 @@ export function SinglePositionAnalysisPage({ onBack }: SinglePositionAnalysisPag
           >
             {sandbox ? '退出沙盘演练' : '沙盘演练模式'}
           </button>
+          <SoundToggleButton />
         </div>
       </header>
 
@@ -149,6 +175,17 @@ export function SinglePositionAnalysisPage({ onBack }: SinglePositionAnalysisPag
             />
             {!sandbox && keyboard.heldPiece && (
               <PlacementGhost piece={keyboard.heldPiece} pointer={keyboard.pointer} />
+            )}
+
+            {sandbox && (
+              <div className="study-nav-buttons">
+                <button onClick={sandboxBack} disabled={!canSandboxGoBack(sandbox)}>
+                  ← 后退
+                </button>
+                <button onClick={sandboxForward} disabled={!canSandboxGoForward(sandbox)}>
+                  前进 →
+                </button>
+              </div>
             )}
 
             <div className="analysis-controls">

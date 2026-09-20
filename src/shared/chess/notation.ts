@@ -45,6 +45,22 @@ export function getPieceLabel(piece: Piece): string {
   return pieceName(piece)
 }
 
+/**
+ * 棋盘上刻在棋子上的字，用繁体——实体象棋的棋子就是这么刻的，看着更像一副真棋。
+ *
+ * 为什么不直接把上面的 PIECE_NAME 改成繁体：那一份是用来生成"炮二平五"这种记谱字符串的，
+ * 记谱会原样存进数据库。改了以后老棋谱存的是"车二平五"、新棋谱存的是"車二平五"，
+ * 同一个库里两种写法混着，搜索和对比都会出问题。所以显示归显示、存储归存储，分开两份。
+ */
+const PIECE_BOARD_LABEL: Record<Side, Record<PieceKind, string>> = {
+  red: { R: '車', N: '馬', B: '相', A: '仕', K: '帥', C: '炮', P: '兵' },
+  black: { R: '車', N: '馬', B: '象', A: '士', K: '將', C: '炮', P: '卒' }
+}
+
+export function getPieceBoardLabel(piece: Piece): string {
+  return PIECE_BOARD_LABEL[piece.side][piece.kind]
+}
+
 /** 同一列上，和目标棋子同种类、同阵营的所有棋子，按"离对方越近排越前"排序 */
 function sameFileSiblingsFrontToBack(board: Board, piece: Piece, col: number): Position[] {
   const siblings: Position[] = []
