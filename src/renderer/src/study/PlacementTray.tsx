@@ -3,7 +3,7 @@
 // 再左键点棋盘落下。这个组件本身不关心棋盘状态。
 
 import type { Piece, PieceKind, Position, Side } from '@shared/chess'
-import { getPieceLabel } from '@shared/chess'
+import { getPieceBoardLabel } from '@shared/chess'
 import { readPieceDragData, setPieceDragData } from './dragTypes'
 import { PLACEMENT_NUMBER_KEYS } from './useKeyboardPlacement'
 
@@ -26,7 +26,7 @@ function TrayPiece({
   selected: boolean
   onSelect: () => void
 }): React.JSX.Element {
-  const label = getPieceLabel({ kind, side })
+  const label = getPieceBoardLabel({ kind, side })
   const hint = side === 'black' ? `⇧${digit}` : digit
   return (
     <div className={`tray-piece-wrap${selected ? ' tray-piece-wrap-selected' : ''}`}>

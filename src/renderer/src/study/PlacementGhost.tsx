@@ -1,4 +1,4 @@
-import { getPieceLabel } from '@shared/chess'
+import { getPieceBoardLabel } from '@shared/chess'
 import type { Piece } from '@shared/chess'
 import type { PointerPos } from './useKeyboardPlacement'
 
@@ -15,7 +15,7 @@ export function PlacementGhost({
       className={`placement-ghost piece-${piece.side}`}
       style={{ left: pointer.x, top: pointer.y }}
     >
-      {getPieceLabel(piece)}
+      {getPieceBoardLabel(piece)}
     </div>
   )
 }
