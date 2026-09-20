@@ -130,6 +130,8 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
     if (index < 0 || index >= history.length) return
     setViewingIndex(index)
     setSelection(NO_SELECTION)
+    // 点折线上的历史点跳局面，棋盘同样在变，响一声；点的就是当前这一步则不响
+    if (index !== viewingIndex) playMoveSound()
   }
 
   function backToLatest(): void {
@@ -143,6 +145,7 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
     setHistory((prev) => prev.slice(0, -1))
     setViewingIndex((prev) => Math.min(prev, nextLength - 1))
     setSelection(NO_SELECTION)
+    playMoveSound()
   }
 
   function toggleSandbox(): void {
@@ -219,11 +222,15 @@ export function useFullGameAnalysis(): UseFullGameAnalysisResult {
 
   /** 沙盘里的前进后退，和正式棋路的前进后退是两套独立的历史，互不影响 */
   function sandboxBack(): void {
-    setSandbox((prev) => (prev ? sandboxGoBack(prev) : prev))
+    if (!sandbox || !canSandboxGoBack(sandbox)) return
+    setSandbox(sandboxGoBack(sandbox))
+    playMoveSound()
   }
 
   function sandboxForward(): void {
-    setSandbox((prev) => (prev ? sandboxGoForward(prev) : prev))
+    if (!sandbox || !canSandboxGoForward(sandbox)) return
+    setSandbox(sandboxGoForward(sandbox))
+    playMoveSound()
   }
 
   return {

@@ -283,10 +283,15 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
     setCursorIndex((prev) => prev + 1)
   }
 
+  // 前进/后退/跳转这三个动作，棋盘上的子同样在动，所以和亲手走子一样要响一声——
+  // 只在局面真的变了的时候响：已经退到头再点后退、或者点的就是当前这个光球，都不该出声。
+
   function goBack(): void {
     if (sandbox) return
+    if (cursorIndex === 0) return
     setCursorIndex((prev) => Math.max(0, prev - 1))
     setSelection(NO_SELECTION)
+    playMoveSound()
   }
 
   function goForward(): void {
@@ -300,6 +305,7 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
       setCursorIndex((prev) => prev + 1)
     }
     setSelection(NO_SELECTION)
+    playMoveSound()
   }
 
   function jumpToNode(nodeId: string): void {
@@ -309,6 +315,7 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
     setActivePath(path)
     setCursorIndex(path.length - 1)
     setSelection(NO_SELECTION)
+    if (nodeId !== currentNodeId) playMoveSound()
   }
 
   async function deleteNode(nodeId: string): Promise<void> {
@@ -355,15 +362,17 @@ export function useStudySession(subjectRef: StudySubjectRef): UseStudySessionRes
 
   /** 沙盘里的前进后退：只在沙盘自己那条历史上移动，正式棋谱树的光标一动不动 */
   function sandboxBack(): void {
-    setSandbox((prev) => (prev && prev.cursor > 0 ? { ...prev, cursor: prev.cursor - 1 } : prev))
+    if (!sandbox || sandbox.cursor === 0) return
+    setSandbox({ ...sandbox, cursor: sandbox.cursor - 1 })
     setSelection(NO_SELECTION)
+    playMoveSound()
   }
 
   function sandboxForward(): void {
-    setSandbox((prev) =>
-      prev && prev.cursor < prev.history.length - 1 ? { ...prev, cursor: prev.cursor + 1 } : prev
-    )
+    if (!sandbox || sandbox.cursor >= sandbox.history.length - 1) return
+    setSandbox({ ...sandbox, cursor: sandbox.cursor + 1 })
     setSelection(NO_SELECTION)
+    playMoveSound()
   }
 
   async function setNoteText(nodeId: string, text: string | null): Promise<void> {

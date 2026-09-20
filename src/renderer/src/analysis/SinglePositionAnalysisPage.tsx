@@ -87,12 +87,17 @@ export function SinglePositionAnalysisPage({ onBack }: SinglePositionAnalysisPag
     setSandbox(createSandbox(board, sideToMove))
   }
 
+  // 前进后退时棋盘上的子也在动，和亲手走子一样要响；退到头再点则不响
   function sandboxBack(): void {
-    setSandbox((prev) => (prev ? sandboxGoBack(prev) : prev))
+    if (!sandbox || !canSandboxGoBack(sandbox)) return
+    setSandbox(sandboxGoBack(sandbox))
+    playMoveSound()
   }
 
   function sandboxForward(): void {
-    setSandbox((prev) => (prev ? sandboxGoForward(prev) : prev))
+    if (!sandbox || !canSandboxGoForward(sandbox)) return
+    setSandbox(sandboxGoForward(sandbox))
+    playMoveSound()
   }
 
   function handleSandboxClick(pos: Position): void {

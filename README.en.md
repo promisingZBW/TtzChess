@@ -22,7 +22,7 @@ The board is on the left, a glowing move tree on the right. Legal moves only. Ea
 
 **AI analysis** in the toolbar sends the board as it stands to the engine — no need to set the position up again. It takes over the right-hand column as a second tab next to the move tree, so you can switch back and forth. Works for opening lines and for midgame / endgame / full-game cases alike.
 
-**Flip view** swaps red and black at any time, file numbers included (black is always 1-9, red always 一-九). Opening lines can also export the whole move tree as a PNG. Every move plays a piece-drop sound; the speaker icon mutes it. When a general gets captured, the winner is shown next to the title.
+**Flip view** swaps red and black at any time, file numbers included (black is always 1-9, red always 一-九). Opening lines can also export the whole move tree as a PNG. Playing a move, stepping back and forth, or jumping to a node all play a piece-drop sound; the speaker icon mutes it. When a general gets captured, the winner is shown next to the title.
 
 ![One-click AI analysis while studying](pics/中炮对屏风马AI.png)
 
